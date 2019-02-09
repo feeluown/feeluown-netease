@@ -302,7 +302,10 @@ class API(object):
         :return:
         """
         url = uri + '/mv/detail?id=' + str(mvid)
-        return self.request('GET', url)
+        data = self.request('GET', url)
+        if data['code'] == 404:
+            return None
+        return data
 
     def get_lyric_by_songid(self, mid):
         """Get song lyric

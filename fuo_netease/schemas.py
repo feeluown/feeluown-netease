@@ -1,8 +1,39 @@
+import logging
+
 from marshmallow import Schema, post_load, fields
+from fuocore.models import Media
+
+logger = logging.getLogger(__name__)
+
+
+class NeteaseMvSchema(Schema):
+    identifier = fields.Int(requried=True, load_from='id')
+    name = fields.Str(requried=True)
+    cover = fields.Str(requried=True)
+    brs = fields.Dict(requried=True)
+
+    @post_load
+    def create_model(self, data):
+        brs = data['brs']
+        sq = hd = sd = ld = None
+        for q, url in brs.items():
+            if q == '1080':
+                sq = url
+            elif q == '720':
+                hd = url
+            elif q == '480':
+                sd = url
+            elif q == '240':
+                ld = url
+            else:
+                logger.warning('There exists another quality:%s mv.', q)
+        data['media'] = Media(sq=sq, hd=hd, sd=sd, ld=ld)
+        return NMvModel(**data)
 
 
 class NeteaseSongSchema(Schema):
     identifier = fields.Int(requried=True, load_from='id')
+    mvid = fields.Int(requried=True)
     title = fields.Str(required=True, load_from='name')
     duration = fields.Float(required=True)
     url = fields.Str(allow_none=True)
@@ -83,8 +114,11 @@ class NeteaseUserSchema(Schema):
         return NUserModel(**data)
 
 
-from .models import NAlbumModel
-from .models import NArtistModel
-from .models import NPlaylistModel
-from .models import NSongModel
-from .models import NUserModel
+from .models import (
+    NAlbumModel,
+    NArtistModel,
+    NPlaylistModel,
+    NSongModel,
+    NUserModel,
+    NMvModel,
+)

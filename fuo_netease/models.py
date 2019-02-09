@@ -6,6 +6,7 @@ from fuocore.models import (
     BaseModel,
     SongModel,
     LyricModel,
+    MvModel,
     PlaylistModel,
     AlbumModel,
     ArtistModel,
@@ -29,7 +30,20 @@ class NBaseModel(BaseModel):
         provider = provider
 
 
+class NMvModel(MvModel, NBaseModel):
+    @classmethod
+    def get(cls, identifier):
+        data = cls._api.get_mv_detail(identifier)
+        if data is not None:
+            mv, _ = NeteaseMvSchema(strict=True).load(data['data'])
+            return mv
+        return None
+
+
 class NSongModel(SongModel, NBaseModel):
+    class Meta:
+        fields = ('mvid', )
+
     @classmethod
     def get(cls, identifier):
         data = cls._api.song_detail(int(identifier))
@@ -53,14 +67,6 @@ class NSongModel(SongModel, NBaseModel):
         else:
             self.url = ''
 
-    def _find_in_local(self):
-        # TODO: make this a API in SongModel
-        path = os.path.join(MUSIC_LIBRARY_PATH, self.filename)
-        if os.path.exists(path):
-            logger.debug('find local file for {}'.format(self))
-            return path
-        return None
-
     # NOTE: if we want to override model attribute, we must
     # implement both getter and setter.
     @property
@@ -76,10 +82,6 @@ class NSongModel(SongModel, NBaseModel):
             expiration time is 20 minutes, after the url expires, it
             will be automaticly refreshed.
         """
-        local_path = self._find_in_local()
-        if local_path:
-            return local_path
-
         if not self._url:
             self._refresh_url()
         elif time.time() > self._expired_at:
@@ -109,6 +111,23 @@ class NSongModel(SongModel, NBaseModel):
     @lyric.setter
     def lyric(self, value):
         self._lyric = value
+
+    @property
+    def mv(self):
+        if self._mv is not None:
+            return self._mv
+        # 这里可能会先获取一次 mvid
+        if self.mvid is not None:
+            mv = NMvModel.get(self.mvid)
+            if mv is not None:
+                self._mv = mv
+                return self._mv
+        self.mvid = None
+        return None
+
+    @mv.setter
+    def mv(self, value):
+        self._mv = value
 
 
 class NAlbumModel(AlbumModel, NBaseModel):
@@ -227,6 +246,7 @@ def search(keyword, **kwargs):
 # import loop
 from .schemas import (
     NeteaseSongSchema,
+    NeteaseMvSchema,
     NeteaseAlbumSchema,
     NeteaseArtistSchema,
     NeteasePlaylistSchema,
