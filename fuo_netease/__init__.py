@@ -17,20 +17,20 @@ logger = logging.getLogger(__name__)
 def enable(app):
     app.library.register(provider)
     if app.mode & app.GuiMode:
-        from feeluown.components.provider import ProviderModel
         from .nem import Nem
 
         nem = Nem(app)
-        pm = ProviderModel(
-            name='网易云音乐',
+        item = app.pvd_uimgr.create_item(
+            name=provider.identifier,
+            text='网易云音乐',
             desc='点击可以登录',
-            on_click=nem.ready_to_login,
         )
-        nem._pm = pm
-        app.providers.assoc(provider.identifier, pm)
+        item.clicked.connect(nem.ready_to_login)
+        nem._pm = item
+        app.pvd_uimgr.add_item(item)
 
 
 def disable(app):
     app.library.deregister(provider)
     if app.mode & app.GuiMode:
-        app.provider.remove(provider.identifier)
+        app.provider_uimgr.remove(provider.identifier)
