@@ -18,7 +18,12 @@ from .provider import provider
 
 
 logger = logging.getLogger(__name__)
-MUSIC_LIBRARY_PATH = os.path.expanduser('~') + '/Music'
+
+
+def _deserialize(data, schema_cls):
+    schema = schema_cls(strict=True)
+    obj, _ = schema.load(data)
+    return obj
 
 
 class NBaseModel(BaseModel):
@@ -174,7 +179,29 @@ class NArtistModel(ArtistModel, NBaseModel):
 
 class NPlaylistModel(PlaylistModel, NBaseModel):
     class Meta:
-        fields = ('uid')
+        fields = ('uid', )
+        allow_create_songs_g = True
+
+    def create_songs_g(self):
+        data = self._api.playlist_detail_v3(self.identifier, limit=200)
+        if data is None:
+            yield from ()
+        else:
+            tracks = data['tracks']
+            track_ids = data['trackIds']  # [{'id': 1, 'v': 1}, ...]
+
+            cur = 0
+            total = len(track_ids)
+            limit = 50
+            while True:
+                for track in tracks:
+                    yield _deserialize(track, NSongSchemaV3)
+                    cur += 1
+                if cur < total:
+                    ids = [o['id'] for o in track_ids[cur:cur+limit]]
+                    tracks = self._api.songs_detail_v3(ids)
+                else:
+                    break
 
     @classmethod
     def get(cls, identifier):
@@ -251,4 +278,5 @@ from .schemas import (
     NeteaseArtistSchema,
     NeteasePlaylistSchema,
     NeteaseUserSchema,
+    NSongSchemaV3,
 )  # noqa

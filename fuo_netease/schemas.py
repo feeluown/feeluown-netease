@@ -1,7 +1,7 @@
 import logging
 
 from marshmallow import Schema, post_load, fields
-from fuocore.models import Media
+from fuocore.models import Media, ModelExistence
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,20 @@ class NeteaseSongSchema(Schema):
         return NSongModel(**data)
 
 
+class NSongSchemaV3(Schema):
+    identifier = fields.Int(requried=True, load_from='id')
+    mvid = fields.Int(requried=True, load_from='mv')
+    title = fields.Str(required=True, load_from='name')
+    duration = fields.Float(required=True, load_from='dt')
+    url = fields.Str(allow_none=True)
+    album = fields.Nested('NAlbumSchemaV3', load_from='al')
+    artists = fields.List(fields.Nested('NArtistSchemaV3'), load_from='ar')
+
+    @post_load
+    def create_model(self, data):
+        return NSongModel(**data)
+
+
 class NeteaseAlbumSchema(Schema):
     identifier = fields.Int(required=True, load_from='id')
     name = fields.Str(required=True)
@@ -73,6 +87,21 @@ class NeteaseAlbumSchema(Schema):
         return NAlbumModel(**data)
 
 
+class NAlbumSchemaV3(Schema):
+    # 如果 album 无效，id 则为 0
+    # 只有当 album 无效时，name 才可能为 None
+    identifier = fields.Int(required=True, load_from='id')
+    name = fields.Str(required=True, allow_none=True)
+
+    @post_load
+    def create_model(self, data):
+        album = NAlbumModel(**data)
+        if album.identifier == 0:
+            album.exists = ModelExistence.no
+            album.name = ''
+        return album
+
+
 class NeteaseArtistSchema(Schema):
     identifier = fields.Int(required=True, load_from='id')
     name = fields.Str()
@@ -82,6 +111,21 @@ class NeteaseArtistSchema(Schema):
     @post_load
     def create_model(self, data):
         return NArtistModel(**data)
+
+
+class NArtistSchemaV3(Schema):
+    # 如果 artist 无效，id 则为 0
+    # 只有当 artist 无效时，name 才可能为 None
+    identifier = fields.Int(required=True, load_from='id')
+    name = fields.Str(required=True, allow_none=True)
+
+    @post_load
+    def create_model(self, data):
+        artist = NArtistModel(**data)
+        if artist.identifier == 0:
+            artist.exists = ModelExistence.no
+            artist.name = ''
+        return artist
 
 
 class NeteasePlaylistSchema(Schema):

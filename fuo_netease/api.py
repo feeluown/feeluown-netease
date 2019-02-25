@@ -17,6 +17,7 @@ site_uri = 'http://music.163.com'
 uri = 'http://music.163.com/api'
 uri_we = 'http://music.163.com/weapi'
 uri_v1 = 'http://music.163.com/weapi/v1'
+uri_v3 = 'http://music.163.com/weapi/v3'
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +129,28 @@ class API(object):
         return []
 
     def playlist_detail(self, playlist_id):
+        """获取歌单歌曲详情（老版）
+
+        这个接口有两个问题，不推荐使用，请使用 v3 版本：
+
+        1. limit 没有效果
+        2. 返回的数据较大
+        """
         action = uri + '/playlist/detail?id=' + str(playlist_id) +\
             '&offset=0&total=true&limit=1001'
         res_data = self.request('GET', action)
         if res_data['code'] == 200:
             return res_data['result']
+        return None
+
+    def playlist_detail_v3(self, pid, offset=0, limit=200):
+        action = '/playlist/detail'
+        url = uri_v3 + action
+        data = dict(id=pid, limit=limit, offset=offset, n=limit)
+        payload = self.encrypt_request(data)
+        res_data = self.request('POST', url, payload)
+        if res_data['code'] == 200:
+            return res_data['playlist']
         return None
 
     def update_playlist_name(self, pid, name):
@@ -249,10 +267,31 @@ class API(object):
         return []
 
     def songs_detail(self, music_ids):
+        """批量获取歌曲的详细信息（老版）
+
+        经过测试 music_ids 不能超过 200 个。
+        """
         music_ids = [str(music_id) for music_id in music_ids]
         action = uri + '/song/detail?ids=[' +\
             ','.join(music_ids) + ']'
         data = self.request('GET', action)
+        if data['code'] == 200:
+            return data['songs']
+        return []
+
+    def songs_detail_v3(self, music_ids):
+        """批量获取歌曲的详细信息
+
+        经过测试 music_ids 不能超过 1000 个
+        """
+        action = '/song/detail'
+        url = uri_v3 + action
+        params = {
+            'c': json.dumps([{'id': id_} for id_ in music_ids]),
+            'ids': json.dumps(music_ids)
+        }
+        payload = self.encrypt_request(params)
+        data = self.request('POST', url, payload)
         if data['code'] == 200:
             return data['songs']
         return []
