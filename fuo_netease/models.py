@@ -249,7 +249,7 @@ class NUserModel(UserModel, NBaseModel):
         user['playlists'] = []
         user['fav_playlists'] = []
         for pl in playlists:
-            if pl['userId'] == identifier:
+            if str(pl['userId']) == str(identifier):
                 user['playlists'].append(pl)
             else:
                 user['fav_playlists'].append(pl)
