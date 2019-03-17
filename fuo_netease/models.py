@@ -45,8 +45,12 @@ class NMvModel(MvModel, NBaseModel):
         return None
 
 
-class NSongModel(SongModel, NBaseModel):
+class NSongModel(SongModel):
+    _api = provider.api
+
     class Meta:
+        allow_get = True
+        provider = provider
         fields = ('mvid', )
 
     @classmethod
@@ -249,7 +253,7 @@ class NUserModel(UserModel, NBaseModel):
         user['playlists'] = []
         user['fav_playlists'] = []
         for pl in playlists:
-            if pl['userId'] == identifier:
+            if str(pl['userId']) == str(identifier):
                 user['playlists'].append(pl)
             else:
                 user['fav_playlists'].append(pl)

@@ -6,12 +6,10 @@ import binascii
 import os
 import json
 import logging
-from difflib import SequenceMatcher
 
 from bs4 import BeautifulSoup
 import requests
 from Crypto.Cipher import AES
-
 
 site_uri = 'http://music.163.com'
 uri = 'http://music.163.com/api'
