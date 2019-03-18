@@ -5,7 +5,7 @@ feeluown 网易云音乐插件
 ## 安装
 
 ```sh
-pip3 install fuo_netease
+pip3 install fuo-netease
 ```
 
 ## changelog
