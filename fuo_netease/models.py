@@ -34,6 +34,32 @@ class NBaseModel(BaseModel):
         allow_get = True
         provider = provider
 
+class NUrlModel(NBaseModel):
+    @classmethod
+    def get(cls, identifier):
+        sq = hd = sd = ld = None
+        data = cls._api.weapi_songs_url([int(identifier)], 999000)
+        if not (data and data[0]['url']):
+            return ''
+        if data[0]['br'] > 320000:
+            sq = data[0]['url']
+            hd = cls._api.weapi_songs_url([int(identifier)], 320000)[0]['url']
+            sd = cls._api.weapi_songs_url([int(identifier)], 192000)[0]['url']
+            ld = cls._api.weapi_songs_url([int(identifier)], 128000)[0]['url']
+        else:
+            if data[0]['br'] == 320000:
+                hd = data[0]['url']
+                sd = cls._api.weapi_songs_url([int(identifier)], 192000)[0]['url']
+                ld = cls._api.weapi_songs_url([int(identifier)], 128000)[0]['url']
+            else:
+                if data[0]['br'] == 192000:
+                    sd = data[0]['url']
+                    ld = cls._api.weapi_songs_url([int(identifier)], 128000)[0]['url']
+                else:# 128000
+                    ld = data[0]['url']
+        from fuocore.models import Media
+        url = Media(sq=sq, hd=hd, sd=sd, ld=ld)
+        return url
 
 class NMvModel(MvModel, NBaseModel):
     @classmethod
@@ -70,11 +96,15 @@ class NSongModel(SongModel):
 
     def _refresh_url(self):
         """刷新获取 url，失败的时候返回空而不是 None"""
-        songs = self._api.weapi_songs_url([int(self.identifier)])
-        if songs and songs[0]['url']:
-            self.url = songs[0]['url']
-        else:
-            self.url = ''
+        # songs = self._api.weapi_songs_url([int(self.identifier)])
+        # if songs and songs[0]['url']:
+        #     self.url = songs[0]['url']
+        # else:
+        #     self.url = ''
+        url = NUrlModel.get(self.identifier)
+        from fuocore.models import Media
+        self._url = url.get_url(Media.Q.sq, Media.S.worse)# 音质选择策略
+        return self._url
 
     # NOTE: if we want to override model attribute, we must
     # implement both getter and setter.
