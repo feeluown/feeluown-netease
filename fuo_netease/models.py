@@ -6,6 +6,7 @@ from fuocore.models import (
     BaseModel,
     SongModel,
     LyricModel,
+    Media,
     MvModel,
     PlaylistModel,
     AlbumModel,
@@ -43,6 +44,23 @@ class NMvModel(MvModel, NBaseModel):
             mv, _ = NeteaseMvSchema(strict=True).load(data['data'])
             return mv
         return None
+
+
+class NMedia(Media):
+    def __init__(self, sq, hd, sd, ld):
+        self._store = {
+            Media.Q.sq: sq,
+            Media.Q.hd: hd,
+            Media.Q.sd: sd,
+            Media.Q.ld: ld,
+        }
+
+    def list_q(self):
+        return list(key for key, value in self._store.items()
+                    if value is not None)
+
+    def get_url(self, q):
+        return self._store.get(q)
 
 
 class NSongModel(SongModel):

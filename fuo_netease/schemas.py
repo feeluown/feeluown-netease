@@ -1,7 +1,7 @@
 import logging
 
 from marshmallow import Schema, post_load, fields
-from fuocore.models import Media, ModelExistence
+from fuocore.models import ModelExistence
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class NeteaseMvSchema(Schema):
                 ld = url
             else:
                 logger.warning('There exists another quality:%s mv.', q)
-        data['media'] = Media(sq=sq, hd=hd, sd=sd, ld=ld)
+        data['media'] = NMedia(sq=sq, hd=hd, sd=sd, ld=ld)
         return NMvModel(**data)
 
 
@@ -165,4 +165,5 @@ from .models import (
     NSongModel,
     NUserModel,
     NMvModel,
+    NMedia,
 )
