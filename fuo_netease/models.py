@@ -53,7 +53,7 @@ class NMvModel(MvModel, NBaseModel):
         return list(key for key, value in self.q_url_mapping.items()
                     if value is not None)
 
-    def get_url(self, quality):
+    def get_media(self, quality):
         if isinstance(quality, Quality.Video):  # Quality.Video Enum Item
             quality = quality.value
         return self.q_url_mapping.get(quality)
