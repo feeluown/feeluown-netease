@@ -177,15 +177,21 @@ class NSongModel(SongModel):
     def get_media(self, quality):
         if self.is_expired:
             self._refresh_url()
-        if self.q_media_mapping.get(quality) is None:
-            q_q_mapping = {'shq': 999000,
-                           'hq': 320000,
-                           'sq': 192000,
-                           'lq': 128000, }
-            songs = self._api.weapi_songs_url([int(self.identifier)], q_q_mapping[quality])
+        media = self.q_media_mapping.get(quality)
+        if media is None:
+            q_bitrate_mapping = {
+                'shq': 999000,
+                'hq': 320000,
+                'sq': 192000,
+                'lq': 128000,
+            }
+            bitrate = q_bitrate_mapping[quality]
+            songs = self._api.weapi_songs_url([int(self.identifier)], bitrate)
             if songs and songs[0]['url']:
-                self.q_media_mapping[quality] = Media(songs[0]['url'], format=songs[0]['type'],
-                                                      bitrate=songs[0]['br'] // 1000)
+                media = Media(songs[0]['url'],
+                              format=songs[0]['type'],
+                              bitrate=songs[0]['br'] // 1000)
+                self.q_media_mapping[quality] = media
             else:
                 self.q_media_mapping[quality] = ''
         return self.q_media_mapping.get(quality)
