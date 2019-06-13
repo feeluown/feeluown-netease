@@ -2,6 +2,7 @@ import logging
 import time
 import os
 
+from fuocore.media import Quality
 from fuocore.models import (
     BaseModel,
     SongModel,
@@ -62,6 +63,10 @@ class NUrlModel(NBaseModel):
         return url
 
 class NMvModel(MvModel, NBaseModel):
+    class Meta:
+        support_multi_quality = True
+        fields = ['q_url_mapping']
+
     @classmethod
     def get(cls, identifier):
         data = cls._api.get_mv_detail(identifier)
@@ -69,6 +74,15 @@ class NMvModel(MvModel, NBaseModel):
             mv, _ = NeteaseMvSchema(strict=True).load(data['data'])
             return mv
         return None
+
+    def list_quality(self):
+        return list(key for key, value in self.q_url_mapping.items()
+                    if value is not None)
+
+    def get_media(self, quality):
+        if isinstance(quality, Quality.Video):  # Quality.Video Enum Item
+            quality = quality.value
+        return self.q_url_mapping.get(quality)
 
 
 class NSongModel(SongModel):

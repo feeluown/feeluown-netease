@@ -48,7 +48,7 @@ class API(object):
     def http(self):
         return requests if self._http is None else self._http
 
-    def request(self, method, action, query=None, timeout=3):
+    def request(self, method, action, query=None, timeout=0.5):
         # logger.info('method=%s url=%s data=%s' % (method, action, query))
         if method == "GET":
             res = self.http.get(action, headers=self.headers,

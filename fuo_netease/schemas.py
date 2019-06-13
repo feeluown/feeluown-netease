@@ -1,7 +1,7 @@
 import logging
 
 from marshmallow import Schema, post_load, fields
-from fuocore.models import Media, ModelExistence
+from fuocore.models import ModelExistence
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +15,10 @@ class NeteaseMvSchema(Schema):
     @post_load
     def create_model(self, data):
         brs = data['brs']
-        sq = hd = sd = ld = None
+        fhd = hd = sd = ld = None
         for q, url in brs.items():
             if q == '1080':
-                sq = url
+                fhd = url
             elif q == '720':
                 hd = url
             elif q == '480':
@@ -27,7 +27,7 @@ class NeteaseMvSchema(Schema):
                 ld = url
             else:
                 logger.warning('There exists another quality:%s mv.', q)
-        data['media'] = Media(sq=sq, hd=hd, sd=sd, ld=ld)
+        data['q_url_mapping'] = dict(fhd=fhd, hd=hd, sd=sd, ld=ld)
         return NMvModel(**data)
 
 
