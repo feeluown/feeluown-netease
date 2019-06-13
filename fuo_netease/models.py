@@ -2,7 +2,7 @@ import logging
 import time
 import os
 
-from fuocore.media import Quality
+from fuocore.media import Quality, Media, AudioMeta
 from fuocore.models import (
     BaseModel,
     SongModel,
@@ -65,7 +65,10 @@ class NSongModel(SongModel):
     class Meta:
         allow_get = True
         provider = provider
-        fields = ('mvid', )
+        # fields = ['mvid',]
+        fields = ['mvid', 'q_media_mapping', 'expired_at']
+        fields_no_get = ['q_media_mapping', 'expired_at']
+        support_multi_quality = True
 
     @classmethod
     def get(cls, identifier):
@@ -84,11 +87,27 @@ class NSongModel(SongModel):
 
     def _refresh_url(self):
         """刷新获取 url，失败的时候返回空而不是 None"""
-        songs = self._api.weapi_songs_url([int(self.identifier)])
+        songs = self._api.weapi_songs_url([int(self.identifier)], 999000)
         if songs and songs[0]['url']:
             self.url = songs[0]['url']
         else:
             self.url = ''
+        self.q_media_mapping = {}
+        if songs and songs[0]['url']:
+            if songs[0]['type'] == 'flac':
+                self.q_media_mapping = {'shq': None, 'hq': None, 'sq': None, 'lq': None}
+            else:
+                if songs[0]['br'] == 320000:
+                    self.q_media_mapping = {'hq': None, 'sq': None, 'lq': None}
+                if songs[0]['br'] == 192000:
+                    self.q_media_mapping = {'sq': None, 'lq': None}
+                if songs[0]['br'] == 128000:
+                    self.q_media_mapping = {'lq': None}
+        self.expired_at = int(time.time()) + 60 * 20 * 1
+
+    @property
+    def is_expired(self):
+        return self.expired_at is not None and time.time() >= self.expired_at
 
     # NOTE: if we want to override model attribute, we must
     # implement both getter and setter.
@@ -151,6 +170,26 @@ class NSongModel(SongModel):
     @mv.setter
     def mv(self, value):
         self._mv = value
+
+    # multi quality support
+
+    def list_quality(self):
+        return list(self.q_media_mapping.keys())
+
+    def get_media(self, quality):
+        if self.is_expired:
+            self._refresh_url()
+        if self.q_media_mapping.get(quality) is None:
+            q_q_mapping = {'shq': 999000,
+                           'hq': 320000,
+                           'sq': 192000,
+                           'lq': 128000, }
+            songs = self._api.weapi_songs_url([int(self.identifier)], q_q_mapping[quality])
+            if songs and songs[0]['url']:
+                self.q_media_mapping[quality] = Media(songs[0]['url'], format=songs[0]['type'], bitrate=songs[0]['br']//1000)
+            else:
+                self.q_media_mapping[quality] = ''
+        return self.q_media_mapping.get(quality)
 
 
 class NAlbumModel(AlbumModel, NBaseModel):

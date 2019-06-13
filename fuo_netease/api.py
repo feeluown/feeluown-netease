@@ -111,7 +111,7 @@ class API(object):
         return []
 
     # 搜索单曲(1)，歌手(100)，专辑(10)，歌单(1000)，用户(1002) *(type)*
-    def search(self, s, stype=1, offset=0, total='true', limit=60):
+    def search(self, s, stype=1, offset=0, total='true', limit=10):
         """get songs list from search keywords"""
         action = uri + '/search/get'
         data = {
@@ -119,7 +119,7 @@ class API(object):
             'type': stype,
             'offset': offset,
             'total': total,
-            'limit': 60
+            'limit': limit
         }
         resp = self.request('POST', action, data)
         if resp['code'] == 200:
