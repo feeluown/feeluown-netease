@@ -64,7 +64,6 @@ class NSongModel(SongModel):
     class Meta:
         allow_get = True
         provider = provider
-        # fields = ['mvid',]
         fields = ['mvid', 'q_media_mapping', 'expired_at']
         fields_no_get = ['q_media_mapping', 'expired_at']
         support_multi_quality = True
@@ -94,15 +93,14 @@ class NSongModel(SongModel):
         self.q_media_mapping = {}
         if songs and songs[0]['url']:
             media = Media(songs[0]['url'], format=songs[0]['type'], bitrate=songs[0]['br'] // 1000)
-            if songs[0]['type'] == 'flac':
+            if songs[0]['br'] > 320000:
                 self.q_media_mapping = {'shq': media, 'hq': None, 'sq': None, 'lq': None}
-            else:
-                if songs[0]['br'] == 320000:
-                    self.q_media_mapping = {'hq': media, 'sq': None, 'lq': None}
-                if songs[0]['br'] == 192000:
-                    self.q_media_mapping = {'sq': media, 'lq': None}
-                if songs[0]['br'] == 128000:
-                    self.q_media_mapping = {'lq': media}
+            if songs[0]['br'] == 320000:
+                self.q_media_mapping = {'hq': media, 'sq': None, 'lq': None}
+            if songs[0]['br'] == 192000:
+                self.q_media_mapping = {'sq': media, 'lq': None}
+            if songs[0]['br'] == 128000:
+                self.q_media_mapping = {'lq': media}
         self.expired_at = int(time.time()) + 60 * 20 * 1
 
     @property
