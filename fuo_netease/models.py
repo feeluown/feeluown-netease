@@ -17,7 +17,6 @@ from fuocore.models import (
 
 from .provider import provider
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -94,15 +93,16 @@ class NSongModel(SongModel):
             self.url = ''
         self.q_media_mapping = {}
         if songs and songs[0]['url']:
+            media = Media(songs[0]['url'], format=songs[0]['type'], bitrate=songs[0]['br'] // 1000)
             if songs[0]['type'] == 'flac':
-                self.q_media_mapping = {'shq': None, 'hq': None, 'sq': None, 'lq': None}
+                self.q_media_mapping = {'shq': media, 'hq': None, 'sq': None, 'lq': None}
             else:
                 if songs[0]['br'] == 320000:
-                    self.q_media_mapping = {'hq': None, 'sq': None, 'lq': None}
+                    self.q_media_mapping = {'hq': media, 'sq': None, 'lq': None}
                 if songs[0]['br'] == 192000:
-                    self.q_media_mapping = {'sq': None, 'lq': None}
+                    self.q_media_mapping = {'sq': media, 'lq': None}
                 if songs[0]['br'] == 128000:
-                    self.q_media_mapping = {'lq': None}
+                    self.q_media_mapping = {'lq': media}
         self.expired_at = int(time.time()) + 60 * 20 * 1
 
     @property
@@ -186,7 +186,8 @@ class NSongModel(SongModel):
                            'lq': 128000, }
             songs = self._api.weapi_songs_url([int(self.identifier)], q_q_mapping[quality])
             if songs and songs[0]['url']:
-                self.q_media_mapping[quality] = Media(songs[0]['url'], format=songs[0]['type'], bitrate=songs[0]['br']//1000)
+                self.q_media_mapping[quality] = Media(songs[0]['url'], format=songs[0]['type'],
+                                                      bitrate=songs[0]['br'] // 1000)
             else:
                 self.q_media_mapping[quality] = ''
         return self.q_media_mapping.get(quality)
@@ -236,7 +237,7 @@ class NArtistModel(ArtistModel, NBaseModel):
 
 class NPlaylistModel(PlaylistModel, NBaseModel):
     class Meta:
-        fields = ('uid', )
+        fields = ('uid',)
         allow_create_songs_g = True
 
     def create_songs_g(self):
@@ -255,7 +256,7 @@ class NPlaylistModel(PlaylistModel, NBaseModel):
                     yield _deserialize(track, NSongSchemaV3)
                     cur += 1
                 if cur < total:
-                    ids = [o['id'] for o in track_ids[cur:cur+limit]]
+                    ids = [o['id'] for o in track_ids[cur:cur + limit]]
                     tracks = self._api.songs_detail_v3(ids)
                 else:
                     break
@@ -293,8 +294,8 @@ class NSearchModel(SearchModel, NBaseModel):
 
 class NUserModel(UserModel, NBaseModel):
     class Meta:
-        fields = ('cookies', )
-        fields_no_get = ('cookies', )
+        fields = ('cookies',)
+        fields_no_get = ('cookies',)
 
     @classmethod
     def get(cls, identifier):
