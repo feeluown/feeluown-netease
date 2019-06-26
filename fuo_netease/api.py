@@ -226,7 +226,18 @@ class API(object):
         soup = BeautifulSoup(res.content, 'html.parser')
         artdescs = soup.select('.n-artdesc')
         if artdescs:
-            return artdescs[0].prettify()
+            artdesc = artdescs[0]
+            # FIXME: 艺术家描述是 html 格式的，它有一个 header 为
+            # ``<h2>{artist_name}简介</h2>``, 而在 FeelUOwn 的 UI 设计中，
+            # FeelUown 是把艺术家描述显示在艺术家名字下面，
+            # 而艺术家名字也是用 ``<h2>{artist_name}</h2>`` 来渲染的，
+            # 这样在视觉上就会出现两个非常相似的文字，非常难看，
+            # 所以我们在这里把描述中的标题去掉。
+            # 另外，我们还把描述中所有的 h2 header 替换成 h3 header。
+            artdesc.h2.decompose()
+            for h2 in artdesc.select('h2'):
+                h2.name = 'h3'
+            return artdesc.prettify()
         return ''
 
     def user_brief(self, user_id):
