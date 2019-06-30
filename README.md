@@ -10,9 +10,10 @@ pip3 install fuo-netease
 
 ## changelog
 
-### 0.2 (WIP)
+### 0.2 (2019-06-30)
 
 - 适配 fuocore.models.Media 新设计
+- 支持多品质音乐
 
 ### 0.1 (2019-03-18)
 
