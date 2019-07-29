@@ -13,6 +13,7 @@ from fuocore.models import (
     ArtistModel,
     SearchModel,
     UserModel,
+    SearchType
 )
 
 from .provider import provider
@@ -323,16 +324,17 @@ class NUserModel(UserModel, NBaseModel):
 
 
 def search(keyword, **kwargs):
-    _songs = provider.api.search(keyword)
-    id_song_map = {}
-    songs = []
-    if _songs:
-        for song in _songs:
-            id_song_map[str(song['id'])] = song
-            schema = NeteaseSongSchema(strict=True)
-            s, _ = schema.load(song)
-            songs.append(s)
-    return NSearchModel(q=keyword, songs=songs)
+    type_ = SearchType.parse(kwargs['type_'])
+    type_type_map = {
+        SearchType.so: 1,
+        SearchType.al: 10,
+        SearchType.ar: 100,
+        SearchType.pl: 1000,
+    }
+    data = provider.api.search(keyword, stype=type_type_map[type_])
+    result = _deserialize(data, NeteaseSearchSchema)
+    result.q = keyword
+    return result
 
 
 # import loop
@@ -344,4 +346,5 @@ from .schemas import (
     NeteasePlaylistSchema,
     NeteaseUserSchema,
     NSongSchemaV3,
+    NeteaseSearchSchema
 )  # noqa

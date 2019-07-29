@@ -79,7 +79,7 @@ class NeteaseAlbumSchema(Schema):
     identifier = fields.Int(required=True, load_from='id')
     name = fields.Str(required=True)
     cover = fields.Str(load_from='picUrl', allow_none=True)
-    songs = fields.List(fields.Nested('NeteaseSongSchema'))
+    songs = fields.List(fields.Nested('NeteaseSongSchema'), allow_none=True)
     artists = fields.List(fields.Nested('NeteaseArtistSchema'))
 
     @post_load
@@ -157,6 +157,18 @@ class NeteaseUserSchema(Schema):
     def create_model(self, data):
         return NUserModel(**data)
 
+class NeteaseSearchSchema(Schema):
+    """搜索结果 Schema"""
+    songs = fields.List(fields.Nested(NeteaseSongSchema))
+    albums = fields.List(fields.Nested(NeteaseAlbumSchema))
+    artists = fields.List(fields.Nested(NeteaseArtistSchema))
+    playlists = fields.List(fields.Nested(NeteasePlaylistSchema), load_from='collects')
+
+    @post_load
+    def create_model(self, data):
+        return NSearchModel(**data)
+    
+
 
 from .models import (
     NAlbumModel,
@@ -165,4 +177,5 @@ from .models import (
     NSongModel,
     NUserModel,
     NMvModel,
+    NSearchModel
 )
