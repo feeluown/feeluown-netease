@@ -191,6 +191,16 @@ class API(object):
         data = self.request('GET', action)
         return data
 
+    def artist_albums(self, artist_id, offset=0, limit=20):
+        action = ('{uri}/artist/albums/{artist_id}?'
+                  'offset={offset}&limit={limit}')
+        action = action.format(uri=uri,
+                      artist_id=artist_id,
+                      offset=offset,
+                      limit=limit)
+        data = self.request('GET', action)
+        return data
+
     # album id --> song id set
     def album_infos(self, album_id):
         """

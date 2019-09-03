@@ -224,6 +224,9 @@ class NAlbumModel(AlbumModel, NBaseModel):
 
 class NArtistModel(ArtistModel, NBaseModel):
 
+    class Meta:
+        allow_create_albums_g = True
+
     @classmethod
     def get(cls, identifier):
         artist_data = cls._api.artist_infos(identifier)
@@ -231,6 +234,24 @@ class NArtistModel(ArtistModel, NBaseModel):
         artist['songs'] = artist_data['hotSongs'] or []
         artist, _ = NeteaseArtistSchema(strict=True).load(artist)
         return artist
+
+    def create_albums_g(self):
+        data = self._api.artist_albums(self.identifier)
+        if data['code'] != 200:
+            yield from ()
+        else:
+            cur = 1
+            while True:
+                for album in data['hotAlbums']:
+                    # the songs field will always be an empty list,
+                    # we set it to None
+                    album['songs'] = None
+                    yield _deserialize(album, NeteaseAlbumSchema)
+                    cur += 1
+                if data['more']:
+                    data = self._api.artist_albums(self.identifier, offset=cur)
+                else:
+                    break
 
     @property
     def desc(self):
