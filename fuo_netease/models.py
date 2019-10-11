@@ -2,6 +2,7 @@ import logging
 import time
 import os
 
+from fuocore.excs import CreateReaderFailed
 from fuocore.media import Quality, Media, AudioMeta
 from fuocore.models import (
     BaseModel,
@@ -15,6 +16,7 @@ from fuocore.models import (
     UserModel,
     SearchType
 )
+from fuocore.reader import RandomSequentialReader
 
 from .provider import provider
 
@@ -270,30 +272,31 @@ class NPlaylistModel(PlaylistModel, NBaseModel):
         allow_create_songs_g = True
 
     def create_songs_g(self):
-        data = self._api.playlist_detail_v3(self.identifier, limit=200)
+        data = self._api.playlist_detail_v3(self.identifier, limit=0)
         if data is None:
-            yield from ()
-        else:
-            tracks = data['tracks']
-            track_ids = data['trackIds']  # [{'id': 1, 'v': 1}, ...]
+            raise CreateReaderFailed('server responses with error status code')
 
-            cur = 0
-            total = len(track_ids)
-            limit = 50
-            while True:
-                for track in tracks:
-                    yield _deserialize(track, NSongSchemaV3)
-                    cur += 1
-                if cur < total:
-                    ids = [o['id'] for o in track_ids[cur:cur + limit]]
-                    tracks = self._api.songs_detail_v3(ids)
-                else:
-                    break
+        track_ids = data['trackIds']  # [{'id': 1, 'v': 1}, ...]
+        count = len(track_ids)
+
+        def read_func(start, end):
+            ids = [track_id['id'] for track_id in track_ids[start: end]]
+            tracks_data = self._api.songs_detail_v3(ids)
+            tracks = []
+            for track_data in tracks_data:
+                track = _deserialize(track_data, NSongSchemaV3)
+                tracks.append(track)
+            return tracks
+
+        reader = RandomSequentialReader(count,
+                                        read_func=read_func,
+                                        max_per_read=1000)
+        return reader
 
     @classmethod
     def get(cls, identifier):
-        data = cls._api.playlist_detail(identifier)
-        playlist, _ = NeteasePlaylistSchema(strict=True).load(data)
+        data = cls._api.playlist_detail_v3(identifier, limit=0)
+        playlist = _deserialize(data, NeteasePlaylistSchema)
         return playlist
 
     def add(self, song_id, allow_exist=True):

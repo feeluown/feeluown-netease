@@ -48,7 +48,7 @@ class API(object):
     def http(self):
         return requests if self._http is None else self._http
 
-    def request(self, method, action, query=None, timeout=0.5):
+    def request(self, method, action, query=None, timeout=1):
         # logger.info('method=%s url=%s data=%s' % (method, action, query))
         if method == "GET":
             res = self.http.get(action, headers=self.headers,
@@ -126,22 +126,10 @@ class API(object):
             return resp['result']
         return []
 
-    def playlist_detail(self, playlist_id):
-        """获取歌单歌曲详情（老版）
-
-        这个接口有两个问题，不推荐使用，请使用 v3 版本：
-
-        1. limit 没有效果
-        2. 返回的数据较大
-        """
-        action = uri + '/playlist/detail?id=' + str(playlist_id) +\
-            '&offset=0&total=true&limit=1001'
-        res_data = self.request('GET', action)
-        if res_data['code'] == 200:
-            return res_data['result']
-        return None
-
     def playlist_detail_v3(self, pid, offset=0, limit=200):
+        """
+        该接口返回的 ['playlist']['trackIds'] 字段会包含所有的歌曲
+        """
         action = '/playlist/detail'
         url = uri_v3 + action
         data = dict(id=pid, limit=limit, offset=offset, n=limit)
