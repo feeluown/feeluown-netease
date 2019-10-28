@@ -10,6 +10,11 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.3 (2019-10-28)
+
+- 支持获取歌手专辑
+- 支持获取播放列表的所有歌曲
+
 ### 0.2 (2019-06-30)
 
 - 适配 fuocore.models.Media 新设计
