@@ -2,7 +2,6 @@ import logging
 import time
 import os
 
-from fuocore.excs import CreateReaderFailed
 from fuocore.media import Quality, Media, AudioMeta
 from fuocore.models import (
     BaseModel,
@@ -19,6 +18,7 @@ from fuocore.models import (
 from fuocore.reader import RandomSequentialReader
 
 from .provider import provider
+from .excs import NeteaseIOError
 
 logger = logging.getLogger(__name__)
 
@@ -274,7 +274,7 @@ class NPlaylistModel(PlaylistModel, NBaseModel):
     def create_songs_g(self):
         data = self._api.playlist_detail_v3(self.identifier, limit=0)
         if data is None:
-            raise CreateReaderFailed('server responses with error status code')
+            raise NeteaseIOError('server responses with error status code')
 
         track_ids = data['trackIds']  # [{'id': 1, 'v': 1}, ...]
         count = len(track_ids)
