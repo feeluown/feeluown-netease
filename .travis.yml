@@ -1,0 +1,20 @@
+dist: xenial
+sudo: required
+
+language: python
+python:
+    - 3.5
+    - 3.6
+    - 3.7
+    - 3.8
+
+install:
+    - sudo apt-get install libmpv1 -y --force-yes
+    - pip install pytest flake8 pytest-cov python-coveralls
+    - pip install -e .
+
+script:
+    - make test
+
+after_success:
+    - coveralls

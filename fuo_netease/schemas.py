@@ -166,17 +166,18 @@ class NeteaseUserSchema(Schema):
     def create_model(self, data, **kwargs):
         return NUserModel(**data)
 
+
 class NeteaseSearchSchema(Schema):
     """搜索结果 Schema"""
     songs = fields.List(fields.Nested(NeteaseSongSchema))
     albums = fields.List(fields.Nested(NeteaseAlbumSchema))
     artists = fields.List(fields.Nested(NeteaseArtistSchema))
-    playlists = fields.List(fields.Nested(NeteasePlaylistSchema), data_key='collects')
+    playlists = fields.List(fields.Nested(NeteasePlaylistSchema),
+                            data_key='collects')
 
     @post_load
     def create_model(self, data, **kwargs):
         return NSearchModel(**data)
-
 
 
 from .models import (
@@ -187,4 +188,4 @@ from .models import (
     NUserModel,
     NMvModel,
     NSearchModel
-)
+)  # noqa

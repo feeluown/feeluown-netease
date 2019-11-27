@@ -1,4 +1,4 @@
-from feeluown.consts import DATA_DIR, HOME_DIR
+from feeluown.consts import DATA_DIR
 
 
 COOKIES_FILE = DATA_DIR + '/ne_cookies.json'

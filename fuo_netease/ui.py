@@ -3,12 +3,10 @@ import json
 import logging
 import os
 
-from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QTime
-from PyQt5.QtGui import QColor, QImage, QPixmap
-from PyQt5.QtWidgets import (QHBoxLayout, QVBoxLayout, QLineEdit, QHeaderView,
-                             QMenu, QAction, QAbstractItemView,
-                             QTableWidgetItem, QSizePolicy, QDialog, QFrame, QPushButton,
-                             QScrollArea, QLabel)
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import (QVBoxLayout, QLineEdit,
+                             QDialog, QPushButton,
+                             QLabel)
 
 from .consts import USER_PW_FILE
 
@@ -18,7 +16,8 @@ logger = logging.getLogger(__name__)
 class LoginDialog(QDialog):
     login_success = pyqtSignal([object])
 
-    def __init__(self, verify_captcha, verify_userpw, create_user, parent=None):
+    def __init__(self, verify_captcha, verify_userpw, create_user,
+                 parent=None):
         super().__init__(parent)
 
         self.verify_captcha = verify_captcha
@@ -79,7 +78,6 @@ class LoginDialog(QDialog):
 
     def captcha_verify(self, data):
         self.captcha_needed = True
-        url = data['captcha_url']
         self.captcha_id = data['captcha_id']
         self.captcha_input.show()
         self.captcha_label.show()

@@ -4,7 +4,6 @@ import logging
 from PyQt5.QtCore import QObject
 
 from .provider import provider
-from .models import NUserModel, search
 
 from .login_controller import LoginController
 from .ui import LoginDialog

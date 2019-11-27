@@ -183,9 +183,9 @@ class API(object):
         action = ('{uri}/artist/albums/{artist_id}?'
                   'offset={offset}&limit={limit}')
         action = action.format(uri=uri,
-                      artist_id=artist_id,
-                      offset=offset,
-                      limit=limit)
+                               artist_id=artist_id,
+                               offset=offset,
+                               limit=limit)
         data = self.request('GET', action)
         return data
 

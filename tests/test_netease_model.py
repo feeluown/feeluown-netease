@@ -47,19 +47,6 @@ class TestNeteaseModel(TestCase):
         self.assertEqual(song.lyric.content, '')
         self.assertTrue(mock_song_lyric.called)
 
-    @patch.object(NSongModel, '_find_in_local', return_value='1.mp3')
-    def test_song_url_1(self, mock_):
-        """check if SongModel will find song in local first"""
-        url = self.song.url
-        self.assertEqual(url, '1.mp3')
-
-    @patch.object(API, 'weapi_songs_url', return_value=data_media)
-    @patch.object(NSongModel, '_find_in_local', return_value=None)
-    def test_song_url_2(self, mock_find_in_local, mock_songs_url):
-        """check if SongModel will refresh song url"""
-        url = self.song.url
-        self.assertEqual(url, data_media[0]['url'])
-
     @patch.object(API, 'album_desc', return_value='desc')
     @patch.object(API, 'album_infos', return_value=data_album)
     def test_album_model(self, mock_album_detail, mock_album_desc):

@@ -1,6 +1,8 @@
-# feeluown-netease
+# feeluown 网易云音乐插件
 
-feeluown 网易云音乐插件
+[![Build Status](https://travis-ci.com/feeluown/feeluown-netease.svg?branch=master)](https://travis-ci.com/feeluown/feeluown-netease)
+[![PyPI](https://img.shields.io/pypi/v/fuo_netease.svg)](https://pypi.python.org/pypi/fuo-netease)
+[![Coverage Status](https://coveralls.io/repos/github/feeluown/feeluown-netease/badge.svg?branch=master)](https://coveralls.io/github/feeluown/feeluown-netease?branch=master)
 
 ## 安装
 
