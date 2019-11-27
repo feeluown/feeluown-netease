@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 def _deserialize(data, schema_cls):
-    schema = schema_cls(strict=True)
-    obj, _ = schema.load(data)
+    schema = schema_cls()
+    obj = schema.load(data)
     return obj
 
 
@@ -47,7 +47,7 @@ class NMvModel(MvModel, NBaseModel):
     def get(cls, identifier):
         data = cls._api.get_mv_detail(identifier)
         if data is not None:
-            mv, _ = NeteaseMvSchema(strict=True).load(data['data'])
+            mv = _deserialize(data['data'], NeteaseMvSchema)
             return mv
         return None
 
@@ -74,7 +74,7 @@ class NSongModel(SongModel):
     @classmethod
     def get(cls, identifier):
         data = cls._api.song_detail(int(identifier))
-        song, _ = NeteaseSongSchema(strict=True).load(data)
+        song = _deserialize(data, NeteaseSongSchema)
         return song
 
     @classmethod
@@ -82,7 +82,7 @@ class NSongModel(SongModel):
         song_data_list = cls._api.songs_detail(identifiers)
         songs = []
         for song_data in song_data_list:
-            song, _ = NeteaseSongSchema(strict=True).load(song_data)
+            song = _deserialize(song_data, NeteaseSongSchema)
             songs.append(song)
         return songs
 
@@ -210,7 +210,7 @@ class NAlbumModel(AlbumModel, NBaseModel):
         album_data = cls._api.album_infos(identifier)
         if album_data is None:
             return None
-        album, _ = NeteaseAlbumSchema(strict=True).load(album_data)
+        album = _deserialize(album_data, NeteaseAlbumSchema)
         return album
 
     @property
@@ -234,7 +234,7 @@ class NArtistModel(ArtistModel, NBaseModel):
         artist_data = cls._api.artist_infos(identifier)
         artist = artist_data['artist']
         artist['songs'] = artist_data['hotSongs'] or []
-        artist, _ = NeteaseArtistSchema(strict=True).load(artist)
+        artist = _deserialize(artist, NeteaseArtistSchema)
         return artist
 
     def create_albums_g(self):
@@ -343,7 +343,7 @@ class NUserModel(UserModel, NBaseModel):
                 user['playlists'].append(pl)
             else:
                 user['fav_playlists'].append(pl)
-        user, _ = NeteaseUserSchema(strict=True).load(user)
+        user = _deserialize(user, NeteaseUserSchema)
         return user
 
 

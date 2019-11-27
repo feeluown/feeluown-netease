@@ -28,7 +28,7 @@ setup(
         'feeluown>=3.2.dev0',
         'beautifulsoup4',
         'pycryptodome',
-        'marshmallow>=2.13.5,<3.0',
+        'marshmallow>=3.0',
         'requests',
     ],
     entry_points={

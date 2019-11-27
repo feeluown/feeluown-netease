@@ -4,18 +4,18 @@ import os
 
 from .api import api
 from .schemas import NeteaseUserSchema
-
+from .models import _deserialize
 from .consts import USERS_INFO_FILE
 
 logger = logging.getLogger(__name__)
 
 
 def create_user(identifier, name, cookies):
-    user, _ = NeteaseUserSchema(strict=True).load(dict(
+    user = _deserialize(dict(
         id=int(identifier),
         name=name,
         cookies=cookies,
-    ))
+    ), NeteaseUserSchema)
     return user
 
 
