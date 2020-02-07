@@ -3,8 +3,8 @@ import logging
 
 from PyQt5.QtCore import QObject
 
+from .excs import NeteaseIOError
 from .provider import provider
-
 from .login_controller import LoginController
 from .ui import LoginDialog
 
@@ -52,10 +52,24 @@ class Nem(QObject):
         LoginController.save(user)
         left_panel = self._app.ui.left_panel
         left_panel.playlists_con.show()
-        left_panel.my_music_con.hide()
+        left_panel.my_music_con.show()
+
+        mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
+        mymusic_fm_item.clicked.connect(self.activate_fm)
+        self._app.mymusic_uimgr.add_item(mymusic_fm_item)
+
         loop = asyncio.get_event_loop()
         self._pm.text = '网易云音乐 - {}'.format(user.name)
         playlists = await loop.run_in_executor(None, lambda: user.playlists)
         self._app.pl_uimgr.clear()
         self._app.pl_uimgr.add(playlists)
         self._app.pl_uimgr.add(user.fav_playlists, is_fav=True)
+
+    def activate_fm(self):
+        self._app.fm.activate(self.fetch_fm_songs)
+
+    def fetch_fm_songs(self, *args, **kwargs):
+        songs = provider._user.get_radio()  # noqa
+        if songs is None:
+            raise NeteaseIOError('unknown error: get no radio songs')
+        return songs

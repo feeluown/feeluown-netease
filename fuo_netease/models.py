@@ -352,6 +352,14 @@ class NUserModel(UserModel, NBaseModel):
         user = _deserialize(user, NeteaseUserSchema)
         return user
 
+    def get_radio(self):
+        songs_data = self._api.get_radio_music()
+        if songs_data is None:
+            logger.error('data should not be None')
+            return None
+        return [_deserialize(song_data, NeteaseSongSchema)
+                for song_data in songs_data]
+
 
 def search(keyword, **kwargs):
     type_ = SearchType.parse(kwargs['type_'])

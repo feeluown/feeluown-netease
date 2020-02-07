@@ -48,7 +48,7 @@ class API(object):
     def http(self):
         return requests if self._http is None else self._http
 
-    def request(self, method, action, query=None, timeout=1):
+    def request(self, method, action, query=None, timeout=2):
         # logger.info('method=%s url=%s data=%s' % (method, action, query))
         if method == "GET":
             res = self.http.get(action, headers=self.headers,
@@ -339,8 +339,11 @@ class API(object):
         return self.request("POST", url, data)
 
     def get_radio_music(self):
-        url = 'http://music.163.com/api/radio/get'
-        return self.request('GET', url)
+        url = uri + '/radio/get'
+        data = self.request('GET', url)
+        if data['code'] == 200:
+            return data['data']
+        return None
 
     def get_mv_detail(self, mvid):
         """Get mv detail
