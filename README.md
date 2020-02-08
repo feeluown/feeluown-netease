@@ -12,6 +12,9 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.4.1 (2020-02-08)
+- 支持私人 FM，依赖 feeluown>=3.3.9
+
 ### 0.4 (2019-11-27)
 - 使用 marshmallow >= 3.0
 - 启用单测和质量检查，并接入 travis，
