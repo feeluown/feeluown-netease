@@ -56,6 +56,7 @@ class Nem(QObject):
 
         mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
         mymusic_fm_item.clicked.connect(self.activate_fm)
+        self._app.mymusic_uimgr.clear()
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
 
         loop = asyncio.get_event_loop()
