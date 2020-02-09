@@ -296,7 +296,7 @@ class NPlaylistModel(PlaylistModel, NBaseModel):
 
         reader = RandomSequentialReader(count,
                                         read_func=read_func,
-                                        max_per_read=1000)
+                                        max_per_read=200)
         return reader
 
     @classmethod
@@ -351,6 +351,16 @@ class NUserModel(UserModel, NBaseModel):
                 user['fav_playlists'].append(pl)
         user = _deserialize(user, NeteaseUserSchema)
         return user
+
+    @property
+    def rec_songs(self):
+        songs_data = self._api.get_recommend_songs()
+        return [_deserialize(song_data, NeteaseSongSchema)
+                for song_data in songs_data]
+
+    @rec_songs.setter
+    def rec_songs(self, value):
+        pass
 
     def get_radio(self):
         songs_data = self._api.get_radio_music()
