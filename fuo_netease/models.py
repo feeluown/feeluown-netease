@@ -2,6 +2,7 @@ import logging
 import time
 
 from fuocore.media import Quality, Media
+from fuocore.models import cached_field
 from fuocore.models import (
     BaseModel,
     SongModel,
@@ -349,18 +350,27 @@ class NUserModel(UserModel, NBaseModel):
                 user['playlists'].append(pl)
             else:
                 user['fav_playlists'].append(pl)
+        # FIXME: GUI模式下无法显示歌单描述
         user = _deserialize(user, NeteaseUserSchema)
         return user
 
-    @property
+    @cached_field()
+    def rec_playlists(self):
+        playlists_data = self._api.get_recommend_playlists()
+        rec_playlists = []
+        for playlist_data in playlists_data:
+            # FIXME: GUI模式下无法显示歌单描述
+            playlist_data['coverImgUrl'] = playlist_data['picUrl']
+            playlist_data['description'] = None
+            playlist = _deserialize(playlist_data, NeteasePlaylistSchema)
+            rec_playlists.append(playlist)
+        return rec_playlists
+
+    @cached_field()
     def rec_songs(self):
         songs_data = self._api.get_recommend_songs()
         return [_deserialize(song_data, NeteaseSongSchema)
                 for song_data in songs_data]
-
-    @rec_songs.setter
-    def rec_songs(self, value):
-        pass
 
     def get_radio(self):
         songs_data = self._api.get_radio_music()

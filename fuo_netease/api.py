@@ -392,6 +392,13 @@ class API(object):
             return data['recommend']
         return None
 
+    def get_recommend_playlists(self):
+        url = uri + '/discovery/recommend/resource'
+        data = self.request('GET', url)
+        if data['code'] == 200:
+            return data['recommend']
+        return None
+
     def get_comment(self, comment_id):
         data = {
             'rid': comment_id,

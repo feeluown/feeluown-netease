@@ -71,6 +71,7 @@ class Nem(QObject):
         self._app.pl_uimgr.clear()
         self._app.pl_uimgr.add(playlists)
         self._app.pl_uimgr.add(user.fav_playlists, is_fav=True)
+        # self._app.pl_uimgr.add(user.rec_playlists)
 
     def activate_fm(self):
         self._app.fm.activate(self.fetch_fm_songs)
