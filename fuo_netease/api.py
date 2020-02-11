@@ -110,6 +110,30 @@ class API(object):
             return data['playlist']
         return []
 
+    def user_favorite_albums(self, offset=0, limit=30):
+        action = uri_we + '/album/sublist'
+        data = {
+            'offset': offset,
+            'limit': limit,
+            'csrf_token': self._cookies.get('__csrf')}
+        payload = self.encrypt_request(data)
+        data = self.request('POST', action, payload)
+        if data['code'] == 200:
+            return data
+        return None
+
+    def user_favorite_artists(self, offset=0, limit=30):
+        action = uri_we + '/artist/sublist'
+        data = {
+            'offset': offset,
+            'limit': limit,
+            'csrf_token': self._cookies.get('__csrf')}
+        payload = self.encrypt_request(data)
+        data = self.request('POST', action, payload)
+        if data['code'] == 200:
+            return data
+        return None
+
     # 搜索单曲(1)，歌手(100)，专辑(10)，歌单(1000)，用户(1002) *(type)*
     def search(self, s, stype=1, offset=0, total='true', limit=30):
         """get songs list from search keywords"""
