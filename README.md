@@ -12,6 +12,11 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.4.2 (2020-02-08)
+- 依赖 feeluown>=3.3.10
+- 支持显示我的专辑收藏
+- 支持每日推荐
+
 ### 0.4.1 (2020-02-08)
 - 支持私人 FM，依赖 feeluown>=3.3.9
 
