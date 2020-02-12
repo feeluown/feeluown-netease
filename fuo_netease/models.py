@@ -29,6 +29,24 @@ def _deserialize(data, schema_cls):
     return obj
 
 
+def create_g(func, schema=None):
+    data = func(limit=0)
+    if data is None:
+        raise NeteaseIOError('server responses with error status code')
+
+    count = int(data['count'])
+
+    def read_func(start, end):
+        data = func(start, end - start)
+        return [_deserialize(data, schema)
+                for data in data['data']]
+
+    reader = RandomSequentialReader(count,
+                                    read_func=read_func,
+                                    max_per_read=200)
+    return reader
+
+
 class NBaseModel(BaseModel):
     # FIXME: remove _detail_fields and _api to Meta
     _api = provider.api
@@ -365,6 +383,20 @@ class NUserModel(UserModel, NBaseModel):
             playlist = _deserialize(playlist_data, NeteasePlaylistSchema)
             rec_playlists.append(playlist)
         return rec_playlists
+
+    @property
+    def fav_artists(self):
+        return create_g(self._api.user_favorite_artists, NeteaseArtistSchema)
+
+    @fav_artists.setter
+    def fav_artists(self, _): pass
+
+    @property
+    def fav_albums(self):
+        return create_g(self._api.user_favorite_albums, NeteaseAlbumSchema)
+
+    @fav_albums.setter
+    def fav_albums(self, _): pass
 
     @cached_field()
     def rec_songs(self):

@@ -46,6 +46,9 @@ class Nem(QObject):
             logger.debug('Trying to load last login user...done')
             asyncio.ensure_future(self.login_as(user))
 
+    def show_fav_albums(self):
+        self._app.ui.songs_table_container.show_albums_coll(self._user.fav_albums)
+
     def show_rec_songs(self):
         self._app.ui.songs_table_container.show_songs(self._user.rec_songs)
 
@@ -61,9 +64,12 @@ class Nem(QObject):
         mymusic_fm_item.clicked.connect(self.activate_fm)
         mymusic_rec_item = self._app.mymusic_uimgr.create_item('📅 每日推荐')
         mymusic_rec_item.clicked.connect(self.show_rec_songs)
+        mymusic_albums_item = self._app.mymusic_uimgr.create_item('♥ 我的专辑')
+        mymusic_albums_item.clicked.connect(self.show_fav_albums)
         self._app.mymusic_uimgr.clear()
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
         self._app.mymusic_uimgr.add_item(mymusic_rec_item)
+        self._app.mymusic_uimgr.add_item(mymusic_albums_item)
 
         loop = asyncio.get_event_loop()
         self._pm.text = '网易云音乐 - {}'.format(user.name)
