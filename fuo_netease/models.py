@@ -86,7 +86,7 @@ class NSongModel(SongModel):
         allow_get = True
         provider = provider
         fields = ['mvid', 'q_media_mapping', 'expired_at']
-        fields_no_get = ['q_media_mapping', 'expired_at']
+        fields_no_get = ['q_media_mapping', 'expired_at', 'url']
         support_multi_quality = True
 
     @classmethod
@@ -352,7 +352,8 @@ class NSearchModel(SearchModel, NBaseModel):
 class NUserModel(UserModel, NBaseModel):
     class Meta:
         fields = ('cookies',)
-        fields_no_get = ('cookies',)
+        fields_no_get = ('cookies', 'rec_songs', 'rec_playlists',
+                         'fav_artists', 'fav_albums', )
 
     @classmethod
     def get(cls, identifier):
