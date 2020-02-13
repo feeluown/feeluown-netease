@@ -262,6 +262,24 @@ class NArtistModel(ArtistModel, NBaseModel):
         artist = _deserialize(artist, NeteaseArtistSchema)
         return artist
 
+    def create_songs_g(self):
+        # FIXME: 当data['songs'] != end - start时会提前停止, 如2116、757159等
+        data = self._api.artist_songs(self.identifier, limit=0)
+        if data is None:
+            raise NeteaseIOError('server responses with error status code')
+
+        count = int(data['total'])
+
+        def read_func(start, end):
+            data = self._api.artist_songs(self.identifier, start, end - start)
+            return [_deserialize(data, NeteaseSongSchema)
+                    for data in data['songs']]
+
+        reader = RandomSequentialReader(count,
+                                        read_func=read_func,
+                                        max_per_read=50)
+        return reader
+
     def create_albums_g(self):
         data = self._api.artist_albums(self.identifier)
         if data['code'] != 200:
