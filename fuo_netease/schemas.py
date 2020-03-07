@@ -87,7 +87,7 @@ class NeteaseAlbumSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     name = fields.Str(required=True)
     cover = fields.Str(data_key='picUrl', allow_none=True)
-    # 搜索接口返回的 album 数据中的 songs 为 None
+    # 收藏和搜索接口返回的 album 数据中的 songs 为 None
     songs = fields.List(fields.Nested('NeteaseSongSchema'), allow_none=True)
     artists = fields.List(fields.Nested('NeteaseArtistSchema'))
 

@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 import requests
 from Crypto.Cipher import AES
 
+from .excs import NeteaseIOError
+
 site_uri = 'http://music.163.com'
 uri = 'http://music.163.com/api'
 uri_we = 'http://music.163.com/weapi'
@@ -18,6 +20,14 @@ uri_v1 = 'http://music.163.com/weapi/v1'
 uri_v3 = 'http://music.163.com/weapi/v3'
 
 logger = logging.getLogger(__name__)
+
+
+class CodeShouldBe200(NeteaseIOError):
+    def __init__(self, data):
+        self._code = data['code']
+
+    def __str__(self):
+        return 'json code field should be 200, got {}'.format(self._code)
 
 
 class API(object):
@@ -117,9 +127,9 @@ class API(object):
             'limit': limit,
             'csrf_token': self._cookies.get('__csrf')}
         payload = self.encrypt_request(data)
-        data = self.request('POST', action, payload)
-        if data['code'] == 200:
-            return data
+        res_data = self.request('POST', action, payload)
+        if res_data['code'] == 200:
+            return res_data
         return None
 
     def user_favorite_artists(self, offset=0, limit=30):
@@ -129,9 +139,9 @@ class API(object):
             'limit': limit,
             'csrf_token': self._cookies.get('__csrf')}
         payload = self.encrypt_request(data)
-        data = self.request('POST', action, payload)
-        if data['code'] == 200:
-            return data
+        res_data = self.request('POST', action, payload)
+        if res_data['code'] == 200:
+            return res_data
         return None
 
     # 搜索单曲(1)，歌手(100)，专辑(10)，歌单(1000)，用户(1002) *(type)*
@@ -161,7 +171,7 @@ class API(object):
         res_data = self.request('POST', url, payload)
         if res_data['code'] == 200:
             return res_data['playlist']
-        return None
+        raise CodeShouldBe200(res_data)
 
     def update_playlist_name(self, pid, name):
         url = uri + '/playlist/update/name'
@@ -202,6 +212,15 @@ class API(object):
         action = uri + '/artist/' + str(artist_id)
         data = self.request('GET', action)
         return data
+
+    def artist_songs(self, artist_id, offset=0, limit=50):
+        action = uri_we + '/artist/songs'
+        data = dict(id=artist_id, limit=limit, offset=offset, n=limit)
+        payload = self.encrypt_request(data)
+        res_data = self.request('POST', action, payload)
+        if res_data['code'] == 200:
+            return res_data
+        raise CodeShouldBe200(res_data)
 
     def artist_albums(self, artist_id, offset=0, limit=20):
         action = ('{uri}/artist/albums/{artist_id}?'

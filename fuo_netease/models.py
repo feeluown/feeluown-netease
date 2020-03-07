@@ -15,7 +15,7 @@ from fuocore.models import (
     UserModel,
     SearchType
 )
-from fuocore.reader import RandomSequentialReader
+from fuocore.reader import RandomSequentialReader, SequentialReader
 
 from .provider import provider
 from .excs import NeteaseIOError
@@ -252,6 +252,7 @@ class NAlbumModel(AlbumModel, NBaseModel):
 class NArtistModel(ArtistModel, NBaseModel):
 
     class Meta:
+        allow_create_songs_g = True
         allow_create_albums_g = True
 
     @classmethod
@@ -261,6 +262,25 @@ class NArtistModel(ArtistModel, NBaseModel):
         artist['songs'] = artist_data['hotSongs'] or []
         artist = _deserialize(artist, NeteaseArtistSchema)
         return artist
+
+    def create_songs_g(self):
+        data = self._api.artist_songs(self.identifier, limit=0)
+        count = int(data['total'])
+
+        def g():
+            offset = 0
+            per = 50
+            while offset < count:
+                data = self._api.artist_songs(self.identifier, offset, per)
+                for song_data in data['songs']:
+                    yield _deserialize(song_data, NeteaseSongSchema)
+                # In reality, len(data['songs']) may smaller than per,
+                # which is a bug of netease server side, so we set
+                # offset to `offset + per` here.
+                offset += per
+                per = 100
+
+        return SequentialReader(g(), count)
 
     def create_albums_g(self):
         data = self._api.artist_albums(self.identifier)
@@ -298,25 +318,24 @@ class NPlaylistModel(PlaylistModel, NBaseModel):
 
     def create_songs_g(self):
         data = self._api.playlist_detail_v3(self.identifier, limit=0)
-        if data is None:
-            raise NeteaseIOError('server responses with error status code')
-
         track_ids = data['trackIds']  # [{'id': 1, 'v': 1}, ...]
         count = len(track_ids)
 
-        def read_func(start, end):
-            ids = [track_id['id'] for track_id in track_ids[start: end]]
-            tracks_data = self._api.songs_detail_v3(ids)
-            tracks = []
-            for track_data in tracks_data:
-                track = _deserialize(track_data, NSongSchemaV3)
-                tracks.append(track)
-            return tracks
+        def g():
+            offset = 0
+            per = 50  # speed up first request
+            while offset < count:
+                end = min(offset + per, count)
+                if end <= offset:
+                    break
+                ids = [track_id['id'] for track_id in track_ids[offset: end]]
+                tracks_data = self._api.songs_detail_v3(ids)
+                for track_data in tracks_data:
+                    yield _deserialize(track_data, NSongSchemaV3)
+                offset += per
+                per = 800
 
-        reader = RandomSequentialReader(count,
-                                        read_func=read_func,
-                                        max_per_read=200)
-        return reader
+        return SequentialReader(g(), count)
 
     @classmethod
     def get(cls, identifier):
