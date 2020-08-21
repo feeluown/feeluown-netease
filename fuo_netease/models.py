@@ -448,7 +448,7 @@ def search(keyword, **kwargs):
 
 
 # import loop
-from .schemas import (
+from .schemas import (  # noqa
     NeteaseSongSchema,
     NeteaseMvSchema,
     NeteaseAlbumSchema,

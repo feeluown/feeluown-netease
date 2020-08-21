@@ -180,7 +180,7 @@ class NeteaseSearchSchema(Schema):
         return NSearchModel(**data)
 
 
-from .models import (
+from .models import (  # noqa
     NAlbumModel,
     NArtistModel,
     NPlaylistModel,
