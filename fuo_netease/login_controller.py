@@ -43,6 +43,8 @@ class LoginController(object):
         if data is None:
             return {'code': 408, 'message': '网络状况不好'}
         elif data['code'] == 200:
+            if data.get("profile") is None:
+                return {'code': 302, 'message': '请先在网页版绑定手机'}
             return {'code': 200, 'message': '登陆成功',
                     'data': data, 'username': username}
         elif data['code'] == 415:
