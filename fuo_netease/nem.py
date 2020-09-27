@@ -49,6 +49,9 @@ class Nem(QObject):
     def show_fav_albums(self):
         self._app.ui.songs_table_container.show_albums_coll(self._user.fav_albums)
 
+    def show_fav_artists(self):
+        self._app.ui.songs_table_container.show_artists_coll(self._user.fav_artists)
+
     def show_rec_songs(self):
         self._app.ui.songs_table_container.show_songs(self._user.rec_songs)
 
@@ -64,12 +67,15 @@ class Nem(QObject):
         mymusic_fm_item.clicked.connect(self.activate_fm)
         mymusic_rec_item = self._app.mymusic_uimgr.create_item('📅 每日推荐')
         mymusic_rec_item.clicked.connect(self.show_rec_songs)
-        mymusic_albums_item = self._app.mymusic_uimgr.create_item('♥ 我的专辑')
+        mymusic_albums_item = self._app.mymusic_uimgr.create_item('♥ 收藏的专辑')
         mymusic_albums_item.clicked.connect(self.show_fav_albums)
+        mymusic_artists_item = self._app.mymusic_uimgr.create_item('♥ 关注的歌手')
+        mymusic_artists_item.clicked.connect(self.show_fav_artists)
         self._app.mymusic_uimgr.clear()
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
         self._app.mymusic_uimgr.add_item(mymusic_rec_item)
         self._app.mymusic_uimgr.add_item(mymusic_albums_item)
+        self._app.mymusic_uimgr.add_item(mymusic_artists_item)
 
         loop = asyncio.get_event_loop()
         self._pm.text = '网易云音乐 - {}'.format(user.name)
