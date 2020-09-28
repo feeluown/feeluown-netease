@@ -172,8 +172,7 @@ class NeteaseSearchSchema(Schema):
     songs = fields.List(fields.Nested(NeteaseSongSchema))
     albums = fields.List(fields.Nested(NeteaseAlbumSchema))
     artists = fields.List(fields.Nested(NeteaseArtistSchema))
-    playlists = fields.List(fields.Nested(NeteasePlaylistSchema),
-                            data_key='collects')
+    playlists = fields.List(fields.Nested(NeteasePlaylistSchema))
 
     @post_load
     def create_model(self, data, **kwargs):
