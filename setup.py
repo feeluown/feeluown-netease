@@ -17,13 +17,13 @@ setup(
         },
     url='https://github.com/feeluown/feeluown-netease',
     keywords=['feeluown', 'plugin', 'netease'],
-    classifiers=(
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3 :: Only',
-        ),
+    ],
     install_requires=[
         'feeluown>=3.3.9',
         'beautifulsoup4',
