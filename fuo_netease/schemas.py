@@ -15,10 +15,10 @@ Schema = BaseSchema
 
 
 class NeteaseMvSchema(Schema):
-    identifier = fields.Int(requried=True, data_key='id')
-    name = fields.Str(requried=True)
-    cover = fields.Str(requried=True)
-    brs = fields.Dict(requried=True)
+    identifier = fields.Int(required=True, data_key='id')
+    name = fields.Str(required=True)
+    cover = fields.Str(required=True)
+    brs = fields.Dict(required=True)
 
     @post_load
     def create_model(self, data, **kwargs):
@@ -40,8 +40,8 @@ class NeteaseMvSchema(Schema):
 
 
 class NeteaseSongSchema(Schema):
-    identifier = fields.Int(requried=True, data_key='id')
-    mvid = fields.Int(requried=True)
+    identifier = fields.Int(required=True, data_key='id')
+    mvid = fields.Int(required=True)
     title = fields.Str(required=True, data_key='name')
     duration = fields.Float(required=True)
     url = fields.Str(allow_none=True)
@@ -70,8 +70,8 @@ class NeteaseSongSchema(Schema):
 
 
 class NSongSchemaV3(Schema):
-    identifier = fields.Int(requried=True, data_key='id')
-    mvid = fields.Int(requried=True, data_key='mv')
+    identifier = fields.Int(required=True, data_key='id')
+    mvid = fields.Int(required=True, data_key='mv')
     title = fields.Str(required=True, data_key='name')
     duration = fields.Float(required=True, data_key='dt')
     url = fields.Str(allow_none=True)
