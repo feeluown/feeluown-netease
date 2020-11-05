@@ -75,16 +75,16 @@ class API(object):
         content_dict = json.loads(content_str)
         return content_dict
 
-    def login(self, username, pw_encrypt, phone=False):
+    def login(self, country_code, username, pw_encrypt, phone=False):
         action = 'http://music.163.com/api/login/'
         phone_action = 'http://music.163.com/api/login/cellphone/'
         data = {
             'password': pw_encrypt,
             'rememberLogin': 'true'
         }
-        if username.isdigit() and len(username) == 11:
+        if username.isdigit() and (len(username) == 11 or country_code):
             phone = True
-            data.update({'phone': username})
+            data.update({'phone': username, 'countrycode': country_code or '86'})
         else:
             data.update({'username': username})
         if phone:
