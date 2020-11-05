@@ -28,6 +28,7 @@ class LoginDialog(QDialog):
         self.captcha_needed = False
         self.captcha_id = 0
 
+        self.country_code_input = QLineEdit(self)
         self.username_input = QLineEdit(self)
         self.pw_input = QLineEdit(self)
         self.pw_input.setEchoMode(QLineEdit.Password)
@@ -40,6 +41,7 @@ class LoginDialog(QDialog):
         self.ok_btn = QPushButton('登录', self)
         self._layout = QVBoxLayout(self)
 
+        self.country_code_input.setPlaceholderText('国际电话区号（默认为86）')
         self.username_input.setPlaceholderText('网易邮箱或者手机号')
         self.pw_input.setPlaceholderText('密码')
 
@@ -49,6 +51,7 @@ class LoginDialog(QDialog):
         self.setFixedWidth(200)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setSpacing(0)
+        self._layout.addWidget(self.country_code_input)
         self._layout.addWidget(self.username_input)
         self._layout.addWidget(self.pw_input)
         self._layout.addWidget(self.captcha_label)
@@ -58,6 +61,7 @@ class LoginDialog(QDialog):
         self._layout.addWidget(self.ok_btn)
 
     def fill(self, data):
+        self.country_code_input.setText(data.get('country_code'))
         self.username_input.setText(data['username'])
         self.pw_input.setText(data['password'])
         self.is_encrypted = True
@@ -67,13 +71,14 @@ class LoginDialog(QDialog):
 
     @property
     def data(self):
+        country_code = self.country_code_input.text()
         username = self.username_input.text()
         pw = self.pw_input.text()
         if self.is_encrypted:
             password = pw
         else:
             password = hashlib.md5(pw.encode('utf-8')).hexdigest()
-        d = dict(username=username, password=password)
+        d = dict(country_code=country_code, username=username, password=password)
         return d
 
     def captcha_verify(self, data):
@@ -100,7 +105,7 @@ class LoginDialog(QDialog):
 
         user_data = self.data
         self.show_hint('正在登录...')
-        data = self.verify_userpw(user_data['username'], user_data['password'])
+        data = self.verify_userpw(user_data['country_code'], user_data['username'], user_data['password'])
         message = data['message']
         self.show_hint(message)
         if data['code'] == 200:
@@ -129,6 +134,7 @@ class LoginDialog(QDialog):
         with open(USER_PW_FILE, 'r') as f:
             d = json.load(f)
             data = d[d['default']]
+        self.country_code_input.setText(data.get('country_code'))
         self.username_input.setText(data['username'])
         self.pw_input.setText(data['password'])
         self.is_encrypted = True

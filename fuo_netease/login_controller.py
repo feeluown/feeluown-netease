@@ -38,8 +38,8 @@ class LoginController(object):
         return user
 
     @classmethod
-    def check(cls, username, pw):
-        data = cls._api.login(username, pw)
+    def check(cls, country_code, username, pw):
+        data = cls._api.login(country_code, username, pw)
         if data is None:
             return {'code': 408, 'message': '网络状况不好'}
         elif data['code'] == 200:
