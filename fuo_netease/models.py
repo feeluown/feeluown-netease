@@ -149,7 +149,7 @@ class NSongModel(SongModel):
             As netease song url will be expired after a period of time,
             we can not use static url here. Currently, we assume that the
             expiration time is 20 minutes, after the url expires, it
-            will be automaticly refreshed.
+            will be automatically refreshed.
         """
         if not self._url:
             self._refresh_url()
