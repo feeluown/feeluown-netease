@@ -39,6 +39,15 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return [_deserialize(song, NeteaseSongSchema) for song in songs]
 
     def song_list_quality(self, song):
+        return list(self._fetch_song_q_media_mapping(song))
+
+    def song_get_media(self, song, quality):
+        return self._fetch_song_q_media_mapping(song).get(quality)
+
+    def _fetch_song_q_media_mapping(self, song):
+        mapping = song.cache_get('quality_media_mapping')
+        if mapping is not None:
+            return mapping
         songs = self.api.weapi_songs_url([int(song.identifier)], 999000)
         mapping = {}
         if songs and songs[0]['url']:
@@ -48,14 +57,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             }
         ttl = 60 * 20
         song.cache_set('quality_media_mapping', mapping, ttl)
-        return list(mapping.keys())
-
-    def song_get_media(self, song, quality):
-        mapping = song.cache_get('quality_media_mapping')
-        if mapping is not None:
-            quality_list = self.song_list_quality(song)
-            if quality in quality_list:
-                return song.cache_get('quality_media_mapping')[quality]
+        return mapping
 
 
 provider = NeteaseProvider()
