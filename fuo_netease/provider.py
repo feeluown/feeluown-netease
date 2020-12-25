@@ -1,6 +1,7 @@
 import logging
 
-from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF
+from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
+    SongModel
 from feeluown.media import Quality
 from feeluown.models import ModelType
 from .api import API
@@ -14,7 +15,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         identifier = 'netease'
         name = '网易云音乐'
         flags = {
-            ModelType.song: PF.model_v2 | PF.similar | PF.multi_quality,
+            ModelType.song: PF.model_v2 | PF.similar | PF.multi_quality | PF.get,
         }
 
     def __init__(self):
@@ -33,6 +34,11 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         assert user.cookies is not None
         self._user = user
         self.api.load_cookies(user.cookies)
+
+    def song_get(self, identifier):
+        data = self.api.song_detail(int(identifier))
+        song_v1 = _deserialize(data, NeteaseSongSchema)
+        return SongModel.from_orm(song_v1)
 
     def song_list_similar(self, song):
         songs = self.api.get_similar_song(song.identifier)
