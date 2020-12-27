@@ -1,7 +1,6 @@
 import logging
 
-from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
-    SongModel
+from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF
 from feeluown.media import Quality
 from feeluown.models import ModelType
 from .api import API
@@ -37,8 +36,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 
     def song_get(self, identifier):
         data = self.api.song_detail(int(identifier))
-        song_v1 = _deserialize(data, NeteaseSongSchema)
-        return SongModel.from_orm(song_v1)
+        return _deserialize(data, NeteaseSongSchema)
 
     def song_list_similar(self, song):
         songs = self.api.get_similar_song(song.identifier)
@@ -70,5 +68,5 @@ provider = NeteaseProvider()
 
 
 from .models import search, _deserialize  # noqa
-from .schemas import NeteaseSongSchema
+from .schemas import NeteaseSongSchema  # noqa
 provider.search = search

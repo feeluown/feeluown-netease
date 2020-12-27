@@ -91,9 +91,8 @@ class NSongModel(SongModel):
 
     @classmethod
     def get(cls, identifier):
-        data = cls._api.song_detail(int(identifier))
-        song = _deserialize(data, NeteaseSongSchema)
-        return song
+        tracks_data = cls._api.songs_detail_v3([identifier])
+        return _deserialize(tracks_data[0], NSongSchemaV3)
 
     @classmethod
     def list(cls, identifiers):

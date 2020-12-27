@@ -1,12 +1,16 @@
 import logging
 
 from marshmallow import Schema, post_load, fields, EXCLUDE
+
+from feeluown.library import SongModel, BriefAlbumModel, BriefArtistModel
 from fuocore.models import ModelExistence
 
 logger = logging.getLogger(__name__)
 
 
 class BaseSchema(Schema):
+    source = fields.Str(missing='netease')
+
     class Meta:
         unknown = EXCLUDE
 
@@ -50,23 +54,10 @@ class NeteaseSongSchema(Schema):
 
     @post_load
     def create_model(self, data, **kwargs):
-        album = data['album']
-        artists = data['artists']
-
-        # 在所有的接口中，song.album.songs 要么是一个空列表，
-        # 要么是 null，这里统一置为 None。
-        album.songs = None
-
-        # 在有的接口中（比如歌单列表接口），album cover 的值是不对的，
-        # 它会指向的是一个网易云默认的灰色图片，我们将其设置为 None，
-        # artist cover 也有类似的问题。
-        album.cover = None
-
-        if artists:
-            for artist in artists:
-                artist.cover = None
-
-        return NSongModel(**data)
+        data['album'] = BriefAlbumModel.from_display_model(data['album'])
+        data['artists'] = [BriefArtistModel.from_display_model(artist)
+                           for artist in data['artists']]
+        return SongModel(**data)
 
 
 class NSongSchemaV3(Schema):
