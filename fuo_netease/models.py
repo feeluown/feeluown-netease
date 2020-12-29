@@ -11,9 +11,8 @@ from fuocore.models import (
     PlaylistModel,
     AlbumModel,
     ArtistModel,
-    SearchModel,
     UserModel,
-    SearchType
+    SearchModel,
 )
 from fuocore.reader import RandomSequentialReader, SequentialReader
 
@@ -432,20 +431,6 @@ class NUserModel(UserModel, NBaseModel):
                 for song_data in songs_data]
 
 
-def search(keyword, **kwargs):
-    type_ = SearchType.parse(kwargs['type_'])
-    type_type_map = {
-        SearchType.so: 1,
-        SearchType.al: 10,
-        SearchType.ar: 100,
-        SearchType.pl: 1000,
-    }
-    data = provider.api.search(keyword, stype=type_type_map[type_])
-    result = _deserialize(data, NeteaseSearchSchema)
-    result.q = keyword
-    return result
-
-
 # import loop
 from .schemas import (  # noqa
     NeteaseSongSchema,
@@ -455,5 +440,4 @@ from .schemas import (  # noqa
     NeteasePlaylistSchema,
     NeteaseUserSchema,
     NSongSchemaV3,
-    NeteaseSearchSchema
 )  # noqa

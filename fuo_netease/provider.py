@@ -2,7 +2,7 @@ import logging
 
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF
 from feeluown.media import Quality
-from feeluown.models import ModelType
+from feeluown.models import ModelType, SearchType
 from .api import API
 
 
@@ -63,10 +63,25 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         song.cache_set('quality_media_mapping', mapping, ttl)
         return mapping
 
+    def search(self, keyword, type_, **kwargs):
+        type_ = SearchType.parse(type_)
+        type_type_map = {
+            SearchType.so: 1,
+            SearchType.al: 10,
+            SearchType.ar: 100,
+            SearchType.pl: 1000,
+        }
+        data = provider.api.search(keyword, stype=type_type_map[type_])
+        result = _deserialize(data, NeteaseSearchSchema)
+        result.q = keyword
+        return result
+
 
 provider = NeteaseProvider()
 
 
-from .models import search, _deserialize  # noqa
-from .schemas import NeteaseSongSchema  # noqa
-provider.search = search
+from .models import _deserialize  # noqa
+from .schemas import (  # noqa
+    NeteaseSongSchema,
+    NeteaseSearchSchema,
+)
