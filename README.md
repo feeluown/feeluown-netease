@@ -12,6 +12,11 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.4.4 (2020-12-30)
+- 修复不能搜索歌单的问题 #11
+- 支持展示收藏歌手 #11
+- 支持使用国外手机号登录 #14
+
 ### 0.4.3 (2020-08-21)
 - 用户没有绑定手机号时，进行提醒 [bugfix](https://github.com/feeluown/FeelUOwn/issues/389)
 
