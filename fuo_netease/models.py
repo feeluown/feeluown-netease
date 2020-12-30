@@ -98,7 +98,7 @@ class NSongModel(SongModel):
         song_data_list = cls._api.songs_detail(identifiers)
         songs = []
         for song_data in song_data_list:
-            song = _deserialize(song_data, NeteaseSongSchema)
+            song = _deserialize(song_data, V2SongSchema)
             songs.append(song)
         return songs
 
@@ -271,7 +271,7 @@ class NArtistModel(ArtistModel, NBaseModel):
             while offset < count:
                 data = self._api.artist_songs(self.identifier, offset, per)
                 for song_data in data['songs']:
-                    yield _deserialize(song_data, NeteaseSongSchema)
+                    yield _deserialize(song_data, V2SongSchema)
                 # In reality, len(data['songs']) may smaller than per,
                 # which is a bug of netease server side, so we set
                 # offset to `offset + per` here.
@@ -419,7 +419,7 @@ class NUserModel(UserModel, NBaseModel):
     @cached_field()
     def rec_songs(self):
         songs_data = self._api.get_recommend_songs()
-        return [_deserialize(song_data, NeteaseSongSchema)
+        return [_deserialize(song_data, V2SongSchema)
                 for song_data in songs_data]
 
     def get_radio(self):
@@ -427,13 +427,13 @@ class NUserModel(UserModel, NBaseModel):
         if songs_data is None:
             logger.error('data should not be None')
             return None
-        return [_deserialize(song_data, NeteaseSongSchema)
+        return [_deserialize(song_data, V2SongSchema)
                 for song_data in songs_data]
 
 
 # import loop
 from .schemas import (  # noqa
-    NeteaseSongSchema,
+    V2SongSchema,
     NeteaseMvSchema,
     NeteaseAlbumSchema,
     NeteaseArtistSchema,

@@ -36,11 +36,11 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 
     def song_get(self, identifier):
         data = self.api.song_detail(int(identifier))
-        return _deserialize(data, NeteaseSongSchema)
+        return _deserialize(data, V2SongSchema)
 
     def song_list_similar(self, song):
         songs = self.api.get_similar_song(song.identifier)
-        return [_deserialize(song, NeteaseSongSchema) for song in songs]
+        return [_deserialize(song, V2SongSchema) for song in songs]
 
     def song_list_quality(self, song):
         return list(self._fetch_song_q_media_mapping(song))
@@ -82,6 +82,6 @@ provider = NeteaseProvider()
 
 from .models import _deserialize  # noqa
 from .schemas import (  # noqa
-    NeteaseSongSchema,
+    V2SongSchema,
     NeteaseSearchSchema,
 )

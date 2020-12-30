@@ -2,8 +2,10 @@ import logging
 
 from marshmallow import Schema, post_load, fields, EXCLUDE
 
-from feeluown.library import SongModel, BriefAlbumModel, BriefArtistModel
-from fuocore.models import ModelExistence
+from feeluown.library import (
+    SongModel, BriefAlbumModel, BriefArtistModel,
+)
+from feeluown.models import ModelExistence
 
 logger = logging.getLogger(__name__)
 
@@ -43,20 +45,41 @@ class NeteaseMvSchema(Schema):
         return NMvModel(**data)
 
 
-class NeteaseSongSchema(Schema):
+class V2BriefAlbumSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    name = fields.Str(required=True)
+    # cover = fields.Str(data_key='picUrl', allow_none=True)
+    artist = fields.Dict()
+
+    @post_load
+    def create_v2_model(self, data, **kwargs):
+        artist = data.pop('artist')
+        data['artists_name'] = artist['name']
+        return BriefAlbumModel(**data)
+
+
+class V2BriefArtistSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    name = fields.Str()
+    # cover = fields.Str(data_key='picUrl', allow_none=True)
+    # songs = fields.List(fields.Nested('V2SongSchema'))
+
+    @post_load
+    def create_v2_model(self, data, **kwargs):
+        return BriefArtistModel(**data)
+
+
+class V2SongSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     mvid = fields.Int(required=True)
     title = fields.Str(required=True, data_key='name')
     duration = fields.Float(required=True)
     url = fields.Str(allow_none=True)
-    album = fields.Nested('NeteaseAlbumSchema')
-    artists = fields.List(fields.Nested('NeteaseArtistSchema'))
+    album = fields.Nested('V2BriefAlbumSchema')
+    artists = fields.List(fields.Nested('V2BriefArtistSchema'))
 
     @post_load
-    def create_model(self, data, **kwargs):
-        data['album'] = BriefAlbumModel.from_display_model(data['album'])
-        data['artists'] = [BriefArtistModel.from_display_model(artist)
-                           for artist in data['artists']]
+    def create_v2_model(self, data, **kwargs):
         return SongModel(**data)
 
 
@@ -79,7 +102,7 @@ class NeteaseAlbumSchema(Schema):
     name = fields.Str(required=True)
     cover = fields.Str(data_key='picUrl', allow_none=True)
     # 收藏和搜索接口返回的 album 数据中的 songs 为 None
-    songs = fields.List(fields.Nested('NeteaseSongSchema'), allow_none=True)
+    songs = fields.List(fields.Nested('V2SongSchema'), allow_none=True)
     artists = fields.List(fields.Nested('NeteaseArtistSchema'))
 
     @post_load
@@ -106,7 +129,7 @@ class NeteaseArtistSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     name = fields.Str()
     cover = fields.Str(data_key='picUrl', allow_none=True)
-    songs = fields.List(fields.Nested('NeteaseSongSchema'))
+    songs = fields.List(fields.Nested('V2SongSchema'))
 
     @post_load
     def create_model(self, data, **kwargs):
@@ -135,7 +158,7 @@ class NeteasePlaylistSchema(Schema):
     desc = fields.Str(required=True, allow_none=True, data_key='description')
     cover = fields.Url(required=True, data_key='coverImgUrl')
     # songs field maybe null, though it can't be null in model
-    songs = fields.List(fields.Nested(NeteaseSongSchema),
+    songs = fields.List(fields.Nested(V2SongSchema),
                         data_key='tracks',
                         allow_none=True)
 
@@ -160,7 +183,7 @@ class NeteaseUserSchema(Schema):
 
 class NeteaseSearchSchema(Schema):
     """搜索结果 Schema"""
-    songs = fields.List(fields.Nested(NeteaseSongSchema))
+    songs = fields.List(fields.Nested(V2SongSchema))
     albums = fields.List(fields.Nested(NeteaseAlbumSchema))
     artists = fields.List(fields.Nested(NeteaseArtistSchema))
     playlists = fields.List(fields.Nested(NeteasePlaylistSchema))
