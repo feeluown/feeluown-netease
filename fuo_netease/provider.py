@@ -1,6 +1,7 @@
 import logging
 
-from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF
+from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
+    CommentModel, BriefCommentModel, BriefUserModel
 from feeluown.media import Quality
 from feeluown.models import ModelType, SearchType
 from .api import API
@@ -14,7 +15,8 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         identifier = 'netease'
         name = '网易云音乐'
         flags = {
-            ModelType.song: PF.model_v2 | PF.similar | PF.multi_quality | PF.get,
+            ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
+                             PF.get | PF.hot_comments),
         }
 
     def __init__(self):
@@ -43,14 +45,48 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return [_deserialize(song, V2SongSchema) for song in songs]
 
     def song_list_quality(self, song):
-        return list(self._fetch_song_q_media_mapping(song))
+        return list(self._song_get_q_media_mapping(song))
+
+    def song_list_hot_comments(self, song):
+        comment_thread_id = self._song_get_comment_thread_id(song)
+        data = self.api.get_comment(comment_thread_id)
+        hot_comments_data = data['hotComments']
+        hot_comments = []
+        for comment_data in hot_comments_data:
+            user_data = comment_data['user']
+            user = BriefUserModel(identifier=str(user_data['userId']),
+                                  source='netease',
+                                  name=user_data['nickname'],
+                                  avatar_url=user_data['avatarUrl'])
+            comment = CommentModel(identifier=comment_data['commentId'],
+                                   source='netease',
+                                   user=user,
+                                   content=comment_data['content'],
+                                   liked_count=comment_data['liked_count'],
+                                   time=comment_data['time'] // 1000,
+                                   parent=None,
+                                   root_comment_id=comment_data['parentCommentId'])
+            hot_comments.appends(comment)
+        return hot_comments
+
+    def _song_get_comment_thread_id(self, song):
+        cache_key = 'comment_thread_id'
+        comment_thread_id, exists = song.cache_get(cache_key)
+        if exists is True:
+            return comment_thread_id
+        # FIXME: the following implicitly get comment_thread_id attribute
+        upgraded_song = self.song_get(song.identifier)
+        comment_thread_id, exists = upgraded_song.cache_get(cache_key)
+        assert exists is True
+        song.cache_set(cache_key, comment_thread_id)
+        return comment_thread_id
 
     def song_get_media(self, song, quality):
-        return self._fetch_song_q_media_mapping(song).get(quality)
+        return self._song_get_q_media_mapping(song).get(quality)
 
-    def _fetch_song_q_media_mapping(self, song):
-        mapping = song.cache_get('quality_media_mapping')
-        if mapping is not None:
+    def _song_get_q_media_mapping(self, song):
+        mapping, exists = song.cache_get('quality_media_mapping')
+        if exists is True:
             return mapping
         songs = self.api.weapi_songs_url([int(song.identifier)], 999000)
         mapping = {}

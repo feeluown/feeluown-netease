@@ -20,6 +20,26 @@ class BaseSchema(Schema):
 Schema = BaseSchema
 
 
+def create_model(model_cls, data, fields_to_cache=None):
+    """
+    maybe this function should be provided by feeluown
+
+    :param fields_to_cache: list of fields name to be cached
+    """
+    if fields_to_cache is not None:
+        cache_data = {}
+        for field in fields_to_cache:
+            value = data.pop(field)
+            if value is not None:
+                cache_data[field] = value
+        model = model_cls(**data)
+        for field, value in cache_data.items():
+            model.cache_set(field, value)
+    else:
+        model = model_cls(**data)
+    return model
+
+
 class NeteaseMvSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     name = fields.Str(required=True)
@@ -71,16 +91,18 @@ class V2BriefArtistSchema(Schema):
 
 class V2SongSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
-    mvid = fields.Int(required=True)
     title = fields.Str(required=True, data_key='name')
     duration = fields.Float(required=True)
-    url = fields.Str(allow_none=True)
     album = fields.Nested('V2BriefAlbumSchema')
     artists = fields.List(fields.Nested('V2BriefArtistSchema'))
 
+    mv_id = fields.Int(required=True, data_key='mvid')
+    comment_thread_id = fields.Str(data_key='commentThreadId',
+                                   allow_none=True, missing=None)
+
     @post_load
     def create_v2_model(self, data, **kwargs):
-        return SongModel(**data)
+        return create_model(SongModel, data, ['mv_id', 'comment_thread_id'])
 
 
 class NSongSchemaV3(Schema):

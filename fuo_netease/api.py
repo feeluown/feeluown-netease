@@ -454,7 +454,10 @@ class API(object):
         }
         url = uri_v1 + '/resource/comments/' + comment_id
         payload = self.encrypt_request(data)
-        return self.request('POST', url, payload)
+        res_data = self.request('POST', url, payload)
+        if res_data['code'] == 200:
+            return res_data
+        raise CodeShouldBe200(res_data)
 
     def accumulate_pl_count(self, mid):
         data = {"ids": "[%d]" % mid, "br": 128000,
