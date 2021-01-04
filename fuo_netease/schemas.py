@@ -1,17 +1,43 @@
 import logging
 
 from marshmallow import Schema, post_load, fields, EXCLUDE
-from fuocore.models import ModelExistence
+
+from feeluown.library import (
+    SongModel, BriefAlbumModel, BriefArtistModel,
+)
+from feeluown.models import ModelExistence
 
 logger = logging.getLogger(__name__)
 
 
 class BaseSchema(Schema):
+    source = fields.Str(missing='netease')
+
     class Meta:
         unknown = EXCLUDE
 
 
 Schema = BaseSchema
+
+
+def create_model(model_cls, data, fields_to_cache=None):
+    """
+    maybe this function should be provided by feeluown
+
+    :param fields_to_cache: list of fields name to be cached
+    """
+    if fields_to_cache is not None:
+        cache_data = {}
+        for field in fields_to_cache:
+            value = data.pop(field)
+            if value is not None:
+                cache_data[field] = value
+        model = model_cls(**data)
+        for field, value in cache_data.items():
+            model.cache_set(field, value)
+    else:
+        model = model_cls(**data)
+    return model
 
 
 class NeteaseMvSchema(Schema):
@@ -39,34 +65,44 @@ class NeteaseMvSchema(Schema):
         return NMvModel(**data)
 
 
-class NeteaseSongSchema(Schema):
+class V2BriefAlbumSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
-    mvid = fields.Int(required=True)
-    title = fields.Str(required=True, data_key='name')
-    duration = fields.Float(required=True)
-    url = fields.Str(allow_none=True)
-    album = fields.Nested('NeteaseAlbumSchema')
-    artists = fields.List(fields.Nested('NeteaseArtistSchema'))
+    name = fields.Str(required=True)
+    # cover = fields.Str(data_key='picUrl', allow_none=True)
+    artist = fields.Dict()
 
     @post_load
-    def create_model(self, data, **kwargs):
-        album = data['album']
-        artists = data['artists']
+    def create_v2_model(self, data, **kwargs):
+        artist = data.pop('artist')
+        data['artists_name'] = artist['name']
+        return BriefAlbumModel(**data)
 
-        # 在所有的接口中，song.album.songs 要么是一个空列表，
-        # 要么是 null，这里统一置为 None。
-        album.songs = None
 
-        # 在有的接口中（比如歌单列表接口），album cover 的值是不对的，
-        # 它会指向的是一个网易云默认的灰色图片，我们将其设置为 None，
-        # artist cover 也有类似的问题。
-        album.cover = None
+class V2BriefArtistSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    name = fields.Str()
+    # cover = fields.Str(data_key='picUrl', allow_none=True)
+    # songs = fields.List(fields.Nested('V2SongSchema'))
 
-        if artists:
-            for artist in artists:
-                artist.cover = None
+    @post_load
+    def create_v2_model(self, data, **kwargs):
+        return BriefArtistModel(**data)
 
-        return NSongModel(**data)
+
+class V2SongSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    title = fields.Str(required=True, data_key='name')
+    duration = fields.Float(required=True)
+    album = fields.Nested('V2BriefAlbumSchema')
+    artists = fields.List(fields.Nested('V2BriefArtistSchema'))
+
+    mv_id = fields.Int(required=True, data_key='mvid')
+    comment_thread_id = fields.Str(data_key='commentThreadId',
+                                   allow_none=True, missing=None)
+
+    @post_load
+    def create_v2_model(self, data, **kwargs):
+        return create_model(SongModel, data, ['mv_id', 'comment_thread_id'])
 
 
 class NSongSchemaV3(Schema):
@@ -88,7 +124,7 @@ class NeteaseAlbumSchema(Schema):
     name = fields.Str(required=True)
     cover = fields.Str(data_key='picUrl', allow_none=True)
     # 收藏和搜索接口返回的 album 数据中的 songs 为 None
-    songs = fields.List(fields.Nested('NeteaseSongSchema'), allow_none=True)
+    songs = fields.List(fields.Nested('V2SongSchema'), allow_none=True)
     artists = fields.List(fields.Nested('NeteaseArtistSchema'))
 
     @post_load
@@ -115,7 +151,7 @@ class NeteaseArtistSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     name = fields.Str()
     cover = fields.Str(data_key='picUrl', allow_none=True)
-    songs = fields.List(fields.Nested('NeteaseSongSchema'))
+    songs = fields.List(fields.Nested('V2SongSchema'))
 
     @post_load
     def create_model(self, data, **kwargs):
@@ -144,7 +180,7 @@ class NeteasePlaylistSchema(Schema):
     desc = fields.Str(required=True, allow_none=True, data_key='description')
     cover = fields.Url(required=True, data_key='coverImgUrl')
     # songs field maybe null, though it can't be null in model
-    songs = fields.List(fields.Nested(NeteaseSongSchema),
+    songs = fields.List(fields.Nested(V2SongSchema),
                         data_key='tracks',
                         allow_none=True)
 
@@ -169,7 +205,7 @@ class NeteaseUserSchema(Schema):
 
 class NeteaseSearchSchema(Schema):
     """搜索结果 Schema"""
-    songs = fields.List(fields.Nested(NeteaseSongSchema))
+    songs = fields.List(fields.Nested(V2SongSchema))
     albums = fields.List(fields.Nested(NeteaseAlbumSchema))
     artists = fields.List(fields.Nested(NeteaseArtistSchema))
     playlists = fields.List(fields.Nested(NeteasePlaylistSchema))

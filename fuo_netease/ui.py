@@ -105,7 +105,9 @@ class LoginDialog(QDialog):
 
         user_data = self.data
         self.show_hint('正在登录...')
-        data = self.verify_userpw(user_data['country_code'], user_data['username'], user_data['password'])
+        data = self.verify_userpw(user_data['country_code'],
+                                  user_data['username'],
+                                  user_data['password'])
         message = data['message']
         self.show_hint(message)
         if data['code'] == 200:

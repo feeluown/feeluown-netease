@@ -11,9 +11,8 @@ from fuocore.models import (
     PlaylistModel,
     AlbumModel,
     ArtistModel,
-    SearchModel,
     UserModel,
-    SearchType
+    SearchModel,
 )
 from fuocore.reader import RandomSequentialReader, SequentialReader
 
@@ -91,16 +90,15 @@ class NSongModel(SongModel):
 
     @classmethod
     def get(cls, identifier):
-        data = cls._api.song_detail(int(identifier))
-        song = _deserialize(data, NeteaseSongSchema)
-        return song
+        tracks_data = cls._api.songs_detail_v3([identifier])
+        return _deserialize(tracks_data[0], NSongSchemaV3)
 
     @classmethod
     def list(cls, identifiers):
         song_data_list = cls._api.songs_detail(identifiers)
         songs = []
         for song_data in song_data_list:
-            song = _deserialize(song_data, NeteaseSongSchema)
+            song = _deserialize(song_data, V2SongSchema)
             songs.append(song)
         return songs
 
@@ -273,7 +271,7 @@ class NArtistModel(ArtistModel, NBaseModel):
             while offset < count:
                 data = self._api.artist_songs(self.identifier, offset, per)
                 for song_data in data['songs']:
-                    yield _deserialize(song_data, NeteaseSongSchema)
+                    yield _deserialize(song_data, V2SongSchema)
                 # In reality, len(data['songs']) may smaller than per,
                 # which is a bug of netease server side, so we set
                 # offset to `offset + per` here.
@@ -421,7 +419,7 @@ class NUserModel(UserModel, NBaseModel):
     @cached_field()
     def rec_songs(self):
         songs_data = self._api.get_recommend_songs()
-        return [_deserialize(song_data, NeteaseSongSchema)
+        return [_deserialize(song_data, V2SongSchema)
                 for song_data in songs_data]
 
     def get_radio(self):
@@ -429,32 +427,17 @@ class NUserModel(UserModel, NBaseModel):
         if songs_data is None:
             logger.error('data should not be None')
             return None
-        return [_deserialize(song_data, NeteaseSongSchema)
+        return [_deserialize(song_data, V2SongSchema)
                 for song_data in songs_data]
-
-
-def search(keyword, **kwargs):
-    type_ = SearchType.parse(kwargs['type_'])
-    type_type_map = {
-        SearchType.so: 1,
-        SearchType.al: 10,
-        SearchType.ar: 100,
-        SearchType.pl: 1000,
-    }
-    data = provider.api.search(keyword, stype=type_type_map[type_])
-    result = _deserialize(data, NeteaseSearchSchema)
-    result.q = keyword
-    return result
 
 
 # import loop
 from .schemas import (  # noqa
-    NeteaseSongSchema,
+    V2SongSchema,
     NeteaseMvSchema,
     NeteaseAlbumSchema,
     NeteaseArtistSchema,
     NeteasePlaylistSchema,
     NeteaseUserSchema,
     NSongSchemaV3,
-    NeteaseSearchSchema
 )  # noqa

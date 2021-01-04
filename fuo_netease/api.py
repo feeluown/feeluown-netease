@@ -423,10 +423,12 @@ class API(object):
         return self.request('GET', url)
 
     def get_similar_song(self, mid, offset=0, limit=10):
-        url = ("http://music.163.com/api/discovery/simiSong"
-               "?songid=%d&offset=%d&total=true&limit=%d"
-               % (mid, offset, limit))
-        return self.request('GET', url)
+        url = (f"http://music.163.com/api/discovery/simiSong"
+               f"?songid={mid}&offset={offset}&total=true&limit={limit}")
+        data = self.request('GET', url)
+        if data['code'] == 200:
+            return data['songs']
+        raise CodeShouldBe200(data)
 
     def get_recommend_songs(self):
         url = uri + '/discovery/recommend/songs'
@@ -452,7 +454,10 @@ class API(object):
         }
         url = uri_v1 + '/resource/comments/' + comment_id
         payload = self.encrypt_request(data)
-        return self.request('POST', url, payload)
+        res_data = self.request('POST', url, payload)
+        if res_data['code'] == 200:
+            return res_data
+        raise CodeShouldBe200(res_data)
 
     def accumulate_pl_count(self, mid):
         data = {"ids": "[%d]" % mid, "br": 128000,
