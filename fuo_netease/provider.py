@@ -62,11 +62,11 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                                    source='netease',
                                    user=user,
                                    content=comment_data['content'],
-                                   liked_count=comment_data['liked_count'],
+                                   liked_count=comment_data['likedCount'],
                                    time=comment_data['time'] // 1000,
                                    parent=None,
                                    root_comment_id=comment_data['parentCommentId'])
-            hot_comments.appends(comment)
+            hot_comments.append(comment)
         return hot_comments
 
     def _song_get_comment_thread_id(self, song):
