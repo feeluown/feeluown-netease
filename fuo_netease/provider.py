@@ -58,13 +58,23 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                                   source='netease',
                                   name=user_data['nickname'],
                                   avatar_url=user_data['avatarUrl'])
+            be_replied = comment_data['beReplied']
+            if be_replied:
+                replied_comment_data = be_replied[0]
+                parent = BriefCommentModel(
+                    identifier=replied_comment_data['beRepliedCommentId'],
+                    user_name=replied_comment_data['user']['nickname'],
+                    content=replied_comment_data['content']
+                )
+            else:
+                parent = None
             comment = CommentModel(identifier=comment_data['commentId'],
                                    source='netease',
                                    user=user,
                                    content=comment_data['content'],
                                    liked_count=comment_data['likedCount'],
                                    time=comment_data['time'] // 1000,
-                                   parent=None,
+                                   parent=parent,
                                    root_comment_id=comment_data['parentCommentId'])
             hot_comments.append(comment)
         return hot_comments
