@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='fuo_netease',
-    version='0.4.4',
+    version='0.5',
     description='feeluown netease plugin',
     author='Cosven',
     author_email='yinshaowen241@gmail.com',
@@ -25,7 +25,7 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
     ],
     install_requires=[
-        'feeluown>=3.3.9',
+        'feeluown>=3.7a0',
         'beautifulsoup4',
         'pycryptodome',
         'marshmallow>=3.0',
