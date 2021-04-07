@@ -439,10 +439,11 @@ class API(object):
 
     def get_recommend_playlists(self):
         url = uri + '/discovery/recommend/resource'
-        data = self.request('GET', url)
+        payload = self.encrypt_request({})
+        data = self.request('POST', url, payload)
         if data['code'] == 200:
             return data['recommend']
-        return None
+        raise CodeShouldBe200(data)
 
     def get_comment(self, comment_id):
         data = {
