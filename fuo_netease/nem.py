@@ -29,6 +29,11 @@ class Nem(QObject):
         self._user = None
         self._pm = None
 
+    def initialize(self):
+        from .page_explore import render  # noqa
+
+        self._app.browser.route('/providers/netease/explore')(render)
+
     def ready_to_login(self):
         if self._user is not None:
             logger.debug('You have already logined in.')
@@ -63,6 +68,8 @@ class Nem(QObject):
         left_panel.playlists_con.show()
         left_panel.my_music_con.show()
 
+        mymusic_explore_item = self._app.mymusic_uimgr.create_item('🎵 发现音乐')
+        mymusic_explore_item.clicked.connect(self.explore_music)
         mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
         mymusic_fm_item.clicked.connect(self.activate_fm)
         mymusic_rec_item = self._app.mymusic_uimgr.create_item('📅 每日推荐')
@@ -72,6 +79,7 @@ class Nem(QObject):
         mymusic_artists_item = self._app.mymusic_uimgr.create_item('♥ 关注的歌手')
         mymusic_artists_item.clicked.connect(self.show_fav_artists)
         self._app.mymusic_uimgr.clear()
+        self._app.mymusic_uimgr.add_item(mymusic_explore_item)
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
         self._app.mymusic_uimgr.add_item(mymusic_rec_item)
         self._app.mymusic_uimgr.add_item(mymusic_albums_item)
@@ -93,3 +101,6 @@ class Nem(QObject):
         if songs is None:
             raise NeteaseIOError('unknown error: get no radio songs')
         return songs
+
+    def explore_music(self):
+        self._app.browser.goto(page='/providers/netease/explore')

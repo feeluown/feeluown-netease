@@ -18,6 +18,7 @@ def enable(app):
         from .nem import Nem
 
         nem = Nem(app)
+        nem.initialize()
         item = app.pvd_uimgr.create_item(
             name=provider.identifier,
             text='网易云音乐',
