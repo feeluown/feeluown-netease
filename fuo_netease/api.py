@@ -111,6 +111,32 @@ class API(object):
         action = 'http://music.163.com/captcha?id=' + str(captcha_id)
         return action
 
+    def user_profile(self, user_id):
+        """
+        {'nickname': 'cosven',
+         'avatarImg': 'xx.jpg',
+         'userType': 0,
+         'authStatus': 0,
+         'expertTags': None,
+         'backgroundUrl': 'xx.jpg',
+         'playCount': 2892,
+         'createdplCnt': 8,
+         'starPlaylist': {...},
+         'playlist': [...],
+         'code': 200
+        }
+        """
+        action = uri_we + '/share/userprofile/info'
+        data = {'userId': user_id}
+        payload = self.encrypt_request(data)
+        res_data = self.request('POST', action, payload)
+        code = res_data['code']
+        if code == 200:
+            return res_data
+        elif code == 400:
+            logger.warn(f'user:{user_id} may be invalid')
+        raise CodeShouldBe200(res_data)
+
     # 用户歌单
     def user_playlists(self, uid, offset=0, limit=200):
         action = uri + '/user/playlist/?offset=' + str(offset) +\

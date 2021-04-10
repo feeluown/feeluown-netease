@@ -1,9 +1,12 @@
 import logging
 
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
-    CommentModel, BriefCommentModel, BriefUserModel
+    CommentModel, BriefCommentModel, BriefUserModel, UserModel, ModelFlags as MF, \
+    NoUserLoggedIn
 from feeluown.media import Quality
 from feeluown.models import ModelType, SearchType
+from feeluown.library import ModelNotFound
+from .excs import NeteaseIOError
 from .api import API
 
 
@@ -17,6 +20,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         flags = {
             ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
                              PF.get | PF.hot_comments),
+            ModelType.none: (PF.current_user, ),
         }
 
     def __init__(self):
@@ -35,6 +39,23 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         assert user.cookies is not None
         self._user = user
         self.api.load_cookies(user.cookies)
+
+    def has_current_user(self):
+        return self._user is not None
+
+    def get_current_user(self):
+        if self._user is None:
+            raise NoUserLoggedIn
+        user = self.user_get(self._user.identifier)
+        return user
+
+    def user_get(self, identifier):
+        data = self.api.user_profile(identifier)
+        user = UserModel(identifier=str(identifier),
+                         source='netease',
+                         name=data['nickname'],
+                         avatar_url=data['avatarImg'])
+        return user
 
     def song_get(self, identifier):
         data = self.api.song_detail(int(identifier))
