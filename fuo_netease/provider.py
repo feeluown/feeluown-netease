@@ -5,6 +5,8 @@ from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, 
     NoUserLoggedIn
 from feeluown.media import Quality
 from feeluown.models import ModelType, SearchType
+from feeluown.library import ModelNotFound
+from .excs import NeteaseIOError
 from .api import API
 
 
@@ -18,7 +20,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         flags = {
             ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
                              PF.get | PF.hot_comments),
-            None: (PF.current_user, ),
+            ModelType.none: (PF.current_user, ),
         }
 
     def __init__(self):
@@ -48,7 +50,12 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return user
 
     def user_get(self, identifier):
-        pass
+        data = self.api.user_profile(identifier)
+        user = UserModel(identifier=str(identifier),
+                         source='netease',
+                         name=data['nickname'],
+                         avatar_url=data['avatarImg'])
+        return user
 
     def song_get(self, identifier):
         data = self.api.song_detail(int(identifier))
