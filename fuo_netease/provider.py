@@ -3,7 +3,7 @@ import logging
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
     CommentModel, BriefCommentModel, BriefUserModel, UserModel, ModelFlags as MF, \
     NoUserLoggedIn
-from feeluown.media import Quality
+from feeluown.media import Quality, Media
 from feeluown.models import ModelType, SearchType
 from feeluown.library import ModelNotFound
 from .excs import NeteaseIOError
@@ -113,6 +113,24 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return comment_thread_id
 
     def song_get_media(self, song, quality):
+        media = self._song_get_q_media_mapping(song).get(quality)
+        if media is None:
+            q_bitrate_mapping = {
+                Quality.Audio.shq: 999000,
+                Quality.Audio.hq: 320000,
+                Quality.Audio.sq: 192000,
+                Quality.Audio.lq: 128000,
+            }
+            bitrate = q_bitrate_mapping[quality]
+            songs = self.api.weapi_songs_url([int(song.identifier)], bitrate)
+            if songs and songs[0]['url']:
+                media = Media(songs[0]['url'],
+                              format=songs[0]['type'],
+                              bitrate=songs[0]['br'] // 1000)
+                self._song_get_q_media_mapping(song)[quality] = media
+            else:
+                self._song_get_q_media_mapping(song)[quality] = ''
+
         return self._song_get_q_media_mapping(song).get(quality)
 
     def _song_get_q_media_mapping(self, song):
@@ -122,10 +140,22 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         songs = self.api.weapi_songs_url([int(song.identifier)], 999000)
         mapping = {}
         if songs and songs[0]['url']:
-            # TODO: parse songs list and get more reasonable mapping
-            mapping = {
-                Quality.Audio.sq: songs[0]['url']
-            }
+            media = Media(songs[0]['url'], format=songs[0]['type'],
+                          bitrate=songs[0]['br'] // 1000)
+            if songs[0]['br'] > 320000:
+                mapping = {Quality.Audio.shq: media,
+                           Quality.Audio.hq: None,
+                           Quality.Audio.sq: None,
+                           Quality.Audio.lq: None}
+            if songs[0]['br'] == 320000:
+                mapping = {Quality.Audio.hq: media,
+                           Quality.Audio.sq: None,
+                           Quality.Audio.lq: None}
+            if songs[0]['br'] == 192000:
+                mapping = {Quality.Audio.sq: media,
+                           Quality.Audio.lq: None}
+            if songs[0]['br'] == 128000:
+                mapping = {Quality.Audio.lq: media}
         ttl = 60 * 20
         song.cache_set('quality_media_mapping', mapping, ttl)
         return mapping
