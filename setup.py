@@ -13,7 +13,8 @@ setup(
         'fuo_netease',
     ],
     package_data={
-        '': []
+        '': ['assets/*.svg',
+             ]
         },
     url='https://github.com/feeluown/feeluown-netease',
     keywords=['feeluown', 'plugin', 'netease'],
@@ -25,7 +26,7 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
     ],
     install_requires=[
-        'feeluown>=3.7a0',
+        'feeluown>=3.7.7',
         'beautifulsoup4',
         'pycryptodome',
         'marshmallow>=3.0',
