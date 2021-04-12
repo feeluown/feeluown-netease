@@ -3,7 +3,7 @@ import logging
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
     CommentModel, BriefCommentModel, BriefUserModel, UserModel, ModelFlags as MF, \
     NoUserLoggedIn
-from feeluown.media import Quality
+from feeluown.media import Quality, Media
 from feeluown.models import ModelType, SearchType
 from feeluown.library import ModelNotFound
 from .excs import NeteaseIOError
@@ -20,7 +20,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         flags = {
             ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
                              PF.get | PF.hot_comments),
-            ModelType.none: (PF.current_user, ),
+            ModelType.none: PF.current_user,
         }
 
     def __init__(self):
@@ -113,19 +113,46 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return comment_thread_id
 
     def song_get_media(self, song, quality):
-        return self._song_get_q_media_mapping(song).get(quality)
+        quality_media_mapping = self._song_get_q_media_mapping(song)
+        if quality not in quality_media_mapping:
+            return None
+        bitrate, url = quality_media_mapping.get(quality)
+        # None means that we don't know if the url exists or not,
+        # try to fetch it.
+        if url is None:
+            songs_data = self.api.weapi_songs_url([int(song.identifier)], bitrate)
+            if songs_data:
+                url = songs_data[0]['url']
+        if url:
+            media = Media(url, bitrate=bitrate//1000)
+            # update value in cache
+            quality_media_mapping[quality] = (bitrate, url)
+            return media
+        # NOTE(cosven): after some manual testing, we found that the url is
+        # empty when this song is only for vip user.
+        logger.debug(f"Song:{song.identifier}'s media:{quality} should exist.")
+        return None
 
     def _song_get_q_media_mapping(self, song):
         mapping, exists = song.cache_get('quality_media_mapping')
         if exists is True:
             return mapping
-        songs = self.api.weapi_songs_url([int(song.identifier)], 999000)
-        mapping = {}
-        if songs and songs[0]['url']:
-            # TODO: parse songs list and get more reasonable mapping
-            mapping = {
-                Quality.Audio.sq: songs[0]['url']
+
+        songs_data = self.api.songs_detail_v3([int(song.identifier)])
+        if songs_data:
+            mapping = {}  # {Quality.Audio: (bitrate, url)}
+            song_data = songs_data[0]
+            key_quality_mapping = {
+                'h': Quality.Audio.hq,
+                'm': Quality.Audio.sq,
+                'l': Quality.Audio.lq,
             }
+            # FIXME: the media may not be valid for non-vip user.
+            # HELP: find a way to check if the media is valid for the current user.
+            for key, quality in key_quality_mapping.items():
+                if key in song_data:
+                    mapping[quality] = (song_data[key]['br'], None)
+
         ttl = 60 * 20
         song.cache_set('quality_media_mapping', mapping, ttl)
         return mapping
