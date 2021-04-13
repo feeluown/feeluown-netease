@@ -149,7 +149,8 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         if exists is True:
             return mapping
 
-        songs_data = self.api.songs_detail_v3([int(song.identifier)])
+        song_id = int(song.identifier)
+        songs_data = self.api.songs_detail_v3([song_id])
         if songs_data:
             mapping = {}  # {Quality.Audio: (bitrate, url)}
             song_data = songs_data[0]
@@ -158,10 +159,19 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                 'm': Quality.Audio.sq,
                 'l': Quality.Audio.lq,
             }
-            # FIXME: the media may not be valid for non-vip user.
-            # HELP: find a way to check if the media is valid for the current user.
+
+            # Trick: try to find the highest quality url
+            # When the song is only for vip/payed user and current user is non-vip,
+            # the highest bitrate is 0, which means this song is unavailable
+            # for current user.
+            songs_url_data = self.api.weapi_songs_url([song_id], 999000)
+            assert songs_url_data, 'length should not be 0'
+            highest_bitrate = songs_url_data[0]['br']
             for key, quality in key_quality_mapping.items():
                 if key in song_data:
+                    # This resource is invalid for current user
+                    if (song_data[key]['br'] - highest_bitrate) > 10000:
+                        continue
                     mapping[quality] = (song_data[key]['br'], None)
 
         ttl = 60 * 20
