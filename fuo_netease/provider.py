@@ -1,12 +1,10 @@
 import logging
 
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
-    CommentModel, BriefCommentModel, BriefUserModel, UserModel, ModelFlags as MF, \
+    CommentModel, BriefCommentModel, BriefUserModel, UserModel, \
     NoUserLoggedIn
-from feeluown.media import Quality
+from feeluown.media import Quality, Media
 from feeluown.models import ModelType, SearchType
-from feeluown.library import ModelNotFound
-from .excs import NeteaseIOError
 from .api import API
 
 
@@ -20,7 +18,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         flags = {
             ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
                              PF.get | PF.hot_comments),
-            ModelType.none: (PF.current_user, ),
+            ModelType.none: PF.current_user,
         }
 
     def __init__(self):
@@ -113,19 +111,67 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return comment_thread_id
 
     def song_get_media(self, song, quality):
-        return self._song_get_q_media_mapping(song).get(quality)
+        quality_media_mapping = self._song_get_q_media_mapping(song)
+        if quality not in quality_media_mapping:
+            return None
+        song_id = int(song.identifier)
+        bitrate, url = quality_media_mapping.get(quality)
+        # None means the url is not fetched, so try to fetch it.
+        if url is None:
+            songs_data = self.api.weapi_songs_url([song_id], bitrate)
+            if songs_data:
+                song_data = songs_data[0]
+                url = song_data['url']
+                actual_bitrate = song_data['br']
+                # Check the url bitrate while it is not empty. Api
+                # may return a fallback bitrate when the expected bitrate
+                # resource is not valid.
+                if url and abs(actual_bitrate - bitrate) >= 10000:
+                    logger.warning(
+                        f'The actual bitrate is {actual_bitrate} '
+                        f'while we want {bitrate}. '
+                        f'[song:{song_id}].'
+                    )
+        if url:
+            media = Media(url, bitrate=bitrate//1000)
+            # update value in cache
+            quality_media_mapping[quality] = (bitrate, url)
+            return media
+        # NOTE(cosven): after some manual testing, we found that the url is
+        # empty when this song is only for vip user.
+        logger.debug(f"media:{quality} should exist. [song:{song_id}]")
+        return None
 
     def _song_get_q_media_mapping(self, song):
         mapping, exists = song.cache_get('quality_media_mapping')
         if exists is True:
             return mapping
-        songs = self.api.weapi_songs_url([int(song.identifier)], 999000)
-        mapping = {}
-        if songs and songs[0]['url']:
-            # TODO: parse songs list and get more reasonable mapping
-            mapping = {
-                Quality.Audio.sq: songs[0]['url']
+
+        song_id = int(song.identifier)
+        songs_data = self.api.songs_detail_v3([song_id])
+        if songs_data:
+            mapping = {}  # {Quality.Audio: (bitrate, url)}
+            song_data = songs_data[0]
+            key_quality_mapping = {
+                'h': Quality.Audio.hq,
+                'm': Quality.Audio.sq,
+                'l': Quality.Audio.lq,
             }
+
+            # Trick: try to find the highest quality url
+            # When the song is only for vip/payed user and current user is non-vip,
+            # the highest bitrate is 0, which means this song is unavailable
+            # for current user.
+            songs_url_data = self.api.weapi_songs_url([song_id], 999000)
+            assert songs_url_data, 'length should not be 0'
+            highest_bitrate = songs_url_data[0]['br']
+            for key, quality in key_quality_mapping.items():
+                if key in song_data:
+                    # This resource is invalid for current user
+                    if (song_data[key]['br'] - highest_bitrate) > 10000:
+                        continue
+                    mapping[quality] = (song_data[key]['br'], None)
+
         ttl = 60 * 20
         song.cache_set('quality_media_mapping', mapping, ttl)
         return mapping
