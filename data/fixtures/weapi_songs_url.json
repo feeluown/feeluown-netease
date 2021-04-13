@@ -1,0 +1,32 @@
+[
+  {
+    "id": 191232,
+    "url": null,
+    "br": 0,
+    "size": 0,
+    "md5": null,
+    "code": -110,
+    "expi": 1200,
+    "type": null,
+    "gain": 0.0,
+    "fee": 1,
+    "uf": null,
+    "payed": 0,
+    "flag": 1028,
+    "canExtend": false,
+    "freeTrialInfo": null,
+    "level": null,
+    "encodeType": null,
+    "freeTrialPrivilege": {
+      "resConsumable": false,
+      "userConsumable": false
+    },
+    "freeTimeTrialPrivilege": {
+      "resConsumable": false,
+      "userConsumable": false,
+      "type": 0,
+      "remainTime": 0
+    },
+    "urlSource": 0
+  }
+]

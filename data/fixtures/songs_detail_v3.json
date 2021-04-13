@@ -1,0 +1,71 @@
+[
+  {
+    "name": "\u9065\u8fdc\u7684\u5979",
+    "id": 191232,
+    "pst": 0,
+    "t": 0,
+    "ar": [
+      {
+        "id": 6460,
+        "name": "\u5f20\u5b66\u53cb",
+        "tns": [],
+        "alias": []
+      }
+    ],
+    "alia": [],
+    "pop": 100.0,
+    "st": 0,
+    "rt": "",
+    "fee": 1,
+    "v": 32,
+    "crbt": null,
+    "cf": "",
+    "al": {
+      "id": 19316,
+      "name": "\u9065\u8fdc\u7684\u5979\u00b7Amour",
+      "picUrl": "http://p3.music.126.net/rxyLRMZdqzHdxyP5cl8qQA==/43980465112095.jpg",
+      "tns": [],
+      "pic": 43980465112095
+    },
+    "dt": 259000,
+    "h": {
+      "br": 320000,
+      "fid": 0,
+      "size": 10394688,
+      "vd": 1123.0
+    },
+    "m": {
+      "br": 192000,
+      "fid": 0,
+      "size": 6236830,
+      "vd": 2190.0
+    },
+    "l": {
+      "br": 128000,
+      "fid": 0,
+      "size": 4157901,
+      "vd": 3287.0
+    },
+    "a": null,
+    "cd": "1",
+    "no": 7,
+    "rtUrl": null,
+    "ftype": 0,
+    "rtUrls": [],
+    "djId": 0,
+    "copyright": 1,
+    "s_id": 0,
+    "mark": 8192,
+    "originCoverType": 1,
+    "originSongSimpleData": null,
+    "resourceState": true,
+    "single": 0,
+    "noCopyrightRcmd": null,
+    "mv": 0,
+    "rtype": 0,
+    "rurl": null,
+    "mst": 9,
+    "cp": 7003,
+    "publishTime": 505238400000
+  }
+]

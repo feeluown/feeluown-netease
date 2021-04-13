@@ -116,13 +116,24 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         quality_media_mapping = self._song_get_q_media_mapping(song)
         if quality not in quality_media_mapping:
             return None
+        song_id = int(song.identifier)
         bitrate, url = quality_media_mapping.get(quality)
-        # None means that we don't know if the url exists or not,
-        # try to fetch it.
+        # None means the url is not fetched, so try to fetch it.
         if url is None:
-            songs_data = self.api.weapi_songs_url([int(song.identifier)], bitrate)
+            songs_data = self.api.weapi_songs_url([song_id], bitrate)
             if songs_data:
-                url = songs_data[0]['url']
+                song_data = songs_data[0]
+                url = song_data['url']
+                actual_bitrate = song_data['br']
+                # Check the url bitrate while it is not empty. Api
+                # may return a fallback bitrate when the expected bitrate
+                # resource is not valid.
+                if url and abs(actual_bitrate - bitrate) >= 10000:
+                    logger.warning(
+                        f'The actual bitrate is {actual_bitrate} '
+                        f'while we want {bitrate}. '
+                        f'[song:{song_id}].'
+                    )
         if url:
             media = Media(url, bitrate=bitrate//1000)
             # update value in cache
@@ -130,7 +141,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             return media
         # NOTE(cosven): after some manual testing, we found that the url is
         # empty when this song is only for vip user.
-        logger.debug(f"Song:{song.identifier}'s media:{quality} should exist.")
+        logger.debug(f"media:{quality} should exist. [song:{song_id}]")
         return None
 
     def _song_get_q_media_mapping(self, song):
