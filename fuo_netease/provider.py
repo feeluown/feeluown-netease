@@ -1,12 +1,10 @@
 import logging
 
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
-    CommentModel, BriefCommentModel, BriefUserModel, UserModel, ModelFlags as MF, \
+    CommentModel, BriefCommentModel, BriefUserModel, UserModel, \
     NoUserLoggedIn
 from feeluown.media import Quality, Media
 from feeluown.models import ModelType, SearchType
-from feeluown.library import ModelNotFound
-from .excs import NeteaseIOError
 from .api import API
 
 
