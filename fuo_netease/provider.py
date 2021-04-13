@@ -111,11 +111,11 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return comment_thread_id
 
     def song_get_media(self, song, quality):
-        quality_media_mapping = self._song_get_q_media_mapping(song)
-        if quality not in quality_media_mapping:
+        q_media_mapping = self._song_get_q_media_mapping(song)
+        if quality not in q_media_mapping:
             return None
         song_id = int(song.identifier)
-        bitrate, url = quality_media_mapping.get(quality)
+        bitrate, url, format = q_media_mapping.get(quality)
         # None means the url is not fetched, so try to fetch it.
         if url is None:
             songs_data = self.api.weapi_songs_url([song_id], bitrate)
@@ -123,6 +123,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                 song_data = songs_data[0]
                 url = song_data['url']
                 actual_bitrate = song_data['br']
+                format = song_data['type']
                 # Check the url bitrate while it is not empty. Api
                 # may return a fallback bitrate when the expected bitrate
                 # resource is not valid.
@@ -133,22 +134,22 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                         f'[song:{song_id}].'
                     )
         if url:
-            media = Media(url, bitrate=bitrate//1000)
+            media = Media(url, bitrate=bitrate//1000, format=format)
             # update value in cache
-            quality_media_mapping[quality] = (bitrate, url)
+            q_media_mapping[quality] = (bitrate, url, format)
             return media
         logger.error('This should not happend')
         return None
 
     def _song_get_q_media_mapping(self, song):
-        mapping, exists = song.cache_get('quality_media_mapping')
+        q_media_mapping, exists = song.cache_get('q_media_mapping')
         if exists is True:
-            return mapping
+            return q_media_mapping
 
         song_id = int(song.identifier)
         songs_data = self.api.songs_detail_v3([song_id])
         if songs_data:
-            mapping = {}  # {Quality.Audio: (bitrate, url)}
+            q_media_mapping = {}  # {Quality.Audio: (bitrate, url, format)}
             song_data = songs_data[0]
             key_quality_mapping = {
                 'h': Quality.Audio.hq,
@@ -163,13 +164,15 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             songs_url_data = self.api.weapi_songs_url([song_id], 999000)
             assert songs_url_data, 'length should not be 0'
             song_url_data = songs_url_data[0]
-            highest_bitrate, url = song_url_data['br'], song_url_data['url']
+            highest_bitrate = song_url_data['br']
             # When the bitrate is large than 320000, the quality is treated as
             # lossless. We set the threshold to 400000 here.
             # Note(cosven): From manual testing, the bitrate of lossless media
             # can be 740kbps, 883kbps, 1411kbps, 1777kbps.
             if highest_bitrate > 400000:
-                mapping[Quality.Audio.shq] = (highest_bitrate, url)
+                q_media_mapping[Quality.Audio.shq] = (highest_bitrate,
+                                                      song_url_data['url'],
+                                                      song_url_data['type'])
 
             for key, quality in key_quality_mapping.items():
                 if key in song_data:
@@ -177,11 +180,11 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                     # bitrate is large than the highest_bitrate
                     if (song_data[key]['br'] - highest_bitrate) > 10000:
                         continue
-                    mapping[quality] = (song_data[key]['br'], None)
+                    q_media_mapping[quality] = (song_data[key]['br'], None, None)
 
         ttl = 60 * 20
-        song.cache_set('quality_media_mapping', mapping, ttl)
-        return mapping
+        song.cache_set('q_media_mapping', q_media_mapping, ttl)
+        return q_media_mapping
 
     def search(self, keyword, type_, **kwargs):
         type_ = SearchType.parse(type_)
