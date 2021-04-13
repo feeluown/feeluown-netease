@@ -137,9 +137,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             # update value in cache
             quality_media_mapping[quality] = (bitrate, url)
             return media
-        # NOTE(cosven): after some manual testing, we found that the url is
-        # empty when this song is only for vip user.
-        logger.debug(f"media:{quality} should exist. [song:{song_id}]")
+        logger.error('This should not happend')
         return None
 
     def _song_get_q_media_mapping(self, song):
@@ -164,10 +162,19 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             # for current user.
             songs_url_data = self.api.weapi_songs_url([song_id], 999000)
             assert songs_url_data, 'length should not be 0'
-            highest_bitrate = songs_url_data[0]['br']
+            song_url_data = songs_url_data[0]
+            highest_bitrate, url = song_url_data['br'], song_url_data['url']
+            # When the bitrate is large than 320000, the quality is treated as
+            # lossless. We set the threshold to 400000 here.
+            # Note(cosven): From manual testing, the bitrate of lossless media
+            # can be 740kbps, 883kbps, 1411kbps, 1777kbps.
+            if highest_bitrate > 400000:
+                mapping[Quality.Audio.shq] = (highest_bitrate, url)
+
             for key, quality in key_quality_mapping.items():
                 if key in song_data:
-                    # This resource is invalid for current user
+                    # This resource is invalid for current user since the expected
+                    # bitrate is large than the highest_bitrate
                     if (song_data[key]['br'] - highest_bitrate) > 10000:
                         continue
                     mapping[quality] = (song_data[key]['br'], None)

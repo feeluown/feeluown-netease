@@ -330,6 +330,18 @@ class API(object):
         return
 
     def weapi_songs_url(self, music_ids, bitrate=320000):
+        """
+        When the expected bitrate song url does not exist, server will
+        return a fallback song url. For example, we request a song
+        url with bitrate=320000. If there only exists a song url with
+        bitrate=128000, the server will return it.
+
+        NOTE(cosven): After some manual testing, we found that the url is
+        None in following cases:
+        1. the song is for vip-user and the current user is not vip.
+        2. the song is a paid song and the current user(may be a vip)
+           has not bought it.
+        """
         url = uri_we + '/song/enhance/player/url'
         data = {
             'ids': music_ids,
