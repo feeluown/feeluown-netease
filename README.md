@@ -12,6 +12,13 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.5 (2021-04-23)
+- 适配 fuo 若干新功能
+  - 平台图标
+  - 支持 library current_user 接口
+  - 改进对多品质音乐的支持
+- 加入一个发现音乐的页面
+
 ### 0.5 (2021-01-07)
 - 适配 fuo library v2，支持相似歌曲、歌曲评论
 
