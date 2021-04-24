@@ -86,7 +86,6 @@ class Nem(QObject):
         self._app.mymusic_uimgr.add_item(mymusic_artists_item)
 
         loop = asyncio.get_event_loop()
-        self._pm.text = '网易云音乐 - {}'.format(user.name)
         playlists = await loop.run_in_executor(None, lambda: user.playlists)
         self._app.pl_uimgr.clear()
         self._app.pl_uimgr.add(playlists)

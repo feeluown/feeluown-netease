@@ -75,8 +75,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             user_data = comment_data['user']
             user = BriefUserModel(identifier=str(user_data['userId']),
                                   source='netease',
-                                  name=user_data['nickname'],
-                                  avatar_url=user_data['avatarUrl'])
+                                  name=user_data['nickname'])
             be_replied = comment_data['beReplied']
             if be_replied:
                 replied_comment_data = be_replied[0]
