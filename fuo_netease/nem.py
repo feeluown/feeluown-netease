@@ -51,6 +51,9 @@ class Nem(QObject):
             logger.debug('Trying to load last login user...done')
             asyncio.ensure_future(self.login_as(user))
 
+    def show_cloud_songs(self):
+        self._app.ui.songs_table_container.show_songs(self._user.cloud_songs)
+
     def show_fav_albums(self):
         self._app.ui.songs_table_container.show_albums_coll(self._user.fav_albums)
 
@@ -74,6 +77,8 @@ class Nem(QObject):
         mymusic_fm_item.clicked.connect(self.activate_fm)
         mymusic_rec_item = self._app.mymusic_uimgr.create_item('📅 每日推荐')
         mymusic_rec_item.clicked.connect(self.show_rec_songs)
+        mymusic_clouds_item = self._app.mymusic_uimgr.create_item('♥ 我的音乐云盘')
+        mymusic_clouds_item.clicked.connect(self.show_cloud_songs)
         mymusic_albums_item = self._app.mymusic_uimgr.create_item('♥ 收藏的专辑')
         mymusic_albums_item.clicked.connect(self.show_fav_albums)
         mymusic_artists_item = self._app.mymusic_uimgr.create_item('♥ 关注的歌手')
@@ -82,6 +87,7 @@ class Nem(QObject):
         self._app.mymusic_uimgr.add_item(mymusic_explore_item)
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
         self._app.mymusic_uimgr.add_item(mymusic_rec_item)
+        self._app.mymusic_uimgr.add_item(mymusic_clouds_item)
         self._app.mymusic_uimgr.add_item(mymusic_albums_item)
         self._app.mymusic_uimgr.add_item(mymusic_artists_item)
 
