@@ -417,6 +417,12 @@ class NUserModel(UserModel, NBaseModel):
     def fav_albums(self, _): pass
 
     @cached_field()
+    def cloud_songs(self):
+        songs_data = self._api.cloud_playlists()
+        return [_deserialize(song_data['simpleSong'], NSongSchemaV3)
+                for song_data in songs_data]
+
+    @cached_field()
     def rec_songs(self):
         songs_data = self._api.get_recommend_songs()
         return [_deserialize(song_data, V2SongSchema)

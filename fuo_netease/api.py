@@ -505,6 +505,27 @@ class API(object):
         payload = self.encrypt_request(data)
         return self.request('POST', url, payload)
 
+    def cloud_playlists(self, offset=0, limit=30):
+        data = dict(limit=limit, offset=offset)
+        url = uri_v1 + '/cloud/get'
+        payload = self.encrypt_request(data)
+        res_data = self.request('POST', url, payload)
+        if res_data['code'] == 200:
+            return res_data['data']
+        raise CodeShouldBe200(res_data)
+
+    def cloud_songs_detail(self, music_ids):
+        data = dict(songIds=music_ids.split(","))
+        url = uri_v1 + '/cloud/get/byids'
+        payload = self.encrypt_request(data)
+        return self.request('POST', url, payload)
+
+    def cloud_songs_delete(self, music_ids):
+        data = dict(songIds=music_ids.split(","))
+        url = uri_we + '/cloud/del'
+        payload = self.encrypt_request(data)
+        return self.request('POST', url, payload)
+
     def _create_aes_key(self, size):
         return (''.join([hex(b)[2:] for b in os.urandom(size)]))[0:16]
 
