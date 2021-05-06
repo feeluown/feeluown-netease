@@ -505,7 +505,7 @@ class API(object):
         payload = self.encrypt_request(data)
         return self.request('POST', url, payload)
 
-    def cloud_playlists(self, offset=0, limit=30):
+    def cloud_songs(self, offset=0, limit=30):
         data = dict(limit=limit, offset=offset)
         url = uri_v1 + '/cloud/get'
         payload = self.encrypt_request(data)

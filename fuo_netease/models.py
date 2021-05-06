@@ -1,6 +1,8 @@
 import logging
 import time
 
+from marshmallow.exceptions import ValidationError
+
 from fuocore.media import Quality, Media
 from fuocore.models import cached_field
 from fuocore.models import (
@@ -418,9 +420,25 @@ class NUserModel(UserModel, NBaseModel):
 
     @cached_field()
     def cloud_songs(self):
-        songs_data = self._api.cloud_playlists()
-        return [_deserialize(song_data['simpleSong'], NSongSchemaV3)
-                for song_data in songs_data]
+        songs_data = self._api.cloud_songs()
+        songs = []
+        for song_data in songs_data:
+            try:
+                song = _deserialize(song_data['simpleSong'], NSongSchemaV3)
+            except ValidationError:
+                # FIXME: 有些云盘歌曲在 netease 上不存在，这时不能把它们转换成
+                # SongModel。因为 SongModel 的逻辑没有考虑 song 不存在的情况。
+                # 这类歌曲往往没有 ar/al 等字段，在反序列化的时候会报 ValidationError，
+                # 所以这里如果检测到 ValidationError，就跳过这首歌曲。
+                #
+                # 可能的修复方法：
+                # 1. 在 SongModel 上加一个 flag 来标识该歌曲是否为云盘歌曲，
+                #    如果是的话，则使用 cloud_song_detail 接口来获取相关信息。
+                name = song_data['simpleSong']['name']
+                logger.warn(f'cloud song:{name} may not exist on netease, skip it.')
+            else:
+                songs.append(song)
+        return songs
 
     @cached_field()
     def rec_songs(self):
