@@ -157,7 +157,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             }
 
             # Trick: try to find the highest quality url
-            # When the song is only for vip/payed user and current user is non-vip,
+            # When the song is only for vip/paid user and current user is non-vip,
             # the highest bitrate is 0, which means this song is unavailable
             # for current user.
             songs_url_data = self.api.weapi_songs_url([song_id], 999000)
