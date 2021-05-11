@@ -440,7 +440,9 @@ class NUserModel(UserModel, NBaseModel):
                 songs.append(song)
         return songs
 
-    @cached_field()
+    # 根据过去经验，每日推荐歌曲在每天早上 6:00 刷新，
+    # ttl 设置为 60s 是为了能够比较即时的获取今天推荐。
+    @cached_field(ttl=60)
     def rec_songs(self):
         songs_data = self._api.get_recommend_songs()
         return [_deserialize(song_data, V2SongSchema)
