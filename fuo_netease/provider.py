@@ -17,7 +17,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         name = '网易云音乐'
         flags = {
             ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
-                             PF.get | PF.hot_comments),
+                             PF.get | PF.hot_comments | PF.web_url),
             ModelType.none: PF.current_user,
         }
 
@@ -184,6 +184,9 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         ttl = 60 * 20
         song.cache_set('q_media_mapping', q_media_mapping, ttl)
         return q_media_mapping
+
+    def song_get_web_url(self, song):
+        return f'https://music.163.com/#/song?id={song.identifier}'
 
     def search(self, keyword, type_, **kwargs):
         type_ = SearchType.parse(type_)

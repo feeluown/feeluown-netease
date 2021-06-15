@@ -28,7 +28,7 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
     ],
     install_requires=[
-        'feeluown>=3.7.7',
+        'feeluown>=3.7.9.dev',
         'beautifulsoup4',
         'pycryptodome',
         'marshmallow>=3.0',
