@@ -30,9 +30,13 @@ class Nem(QObject):
         self._pm = None
 
     def initialize(self):
-        from .page_explore import render  # noqa
+        from .page_explore import render as explore_render # noqa
+        from .page_fav import render as fav_render  # noqa
+        from .page_daily_recommendation import render as dr_render
 
-        self._app.browser.route('/providers/netease/explore')(render)
+        self._app.browser.route('/providers/netease/explore')(explore_render)
+        self._app.browser.route('/providers/netease/fav')(fav_render)
+        self._app.browser.route('/providers/netease/daily_recommendation')(dr_render)
 
     def ready_to_login(self):
         if self._user is not None:
@@ -51,18 +55,6 @@ class Nem(QObject):
             logger.debug('Trying to load last login user...done')
             asyncio.ensure_future(self.login_as(user))
 
-    def show_cloud_songs(self):
-        self._app.ui.songs_table_container.show_songs(self._user.cloud_songs)
-
-    def show_fav_albums(self):
-        self._app.ui.songs_table_container.show_albums_coll(self._user.fav_albums)
-
-    def show_fav_artists(self):
-        self._app.ui.songs_table_container.show_artists_coll(self._user.fav_artists)
-
-    def show_rec_songs(self):
-        self._app.ui.songs_table_container.show_songs(self._user.rec_songs)
-
     async def login_as(self, user):
         provider.auth(user)
         self._user = user
@@ -72,24 +64,20 @@ class Nem(QObject):
         left_panel.my_music_con.show()
 
         mymusic_explore_item = self._app.mymusic_uimgr.create_item('🎵 发现音乐')
-        mymusic_explore_item.clicked.connect(self.explore_music)
+        mymusic_explore_item.clicked.connect(
+            lambda: self._app.browser.goto(page='/providers/netease/explore'),
+            weak=False)
         mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
         mymusic_fm_item.clicked.connect(self.activate_fm)
-        mymusic_rec_item = self._app.mymusic_uimgr.create_item('📅 每日推荐')
-        mymusic_rec_item.clicked.connect(self.show_rec_songs)
-        mymusic_clouds_item = self._app.mymusic_uimgr.create_item('♥ 我的音乐云盘')
-        mymusic_clouds_item.clicked.connect(self.show_cloud_songs)
-        mymusic_albums_item = self._app.mymusic_uimgr.create_item('♥ 收藏的专辑')
-        mymusic_albums_item.clicked.connect(self.show_fav_albums)
-        mymusic_artists_item = self._app.mymusic_uimgr.create_item('♥ 关注的歌手')
-        mymusic_artists_item.clicked.connect(self.show_fav_artists)
+        mymusic_fav_item = self._app.mymusic_uimgr.create_item('♥ 收藏与关注')
+        mymusic_fav_item.clicked.connect(
+            lambda: self._app.browser.goto(page='/providers/netease/fav'),
+            weak=False)
+
         self._app.mymusic_uimgr.clear()
         self._app.mymusic_uimgr.add_item(mymusic_explore_item)
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
-        self._app.mymusic_uimgr.add_item(mymusic_rec_item)
-        self._app.mymusic_uimgr.add_item(mymusic_clouds_item)
-        self._app.mymusic_uimgr.add_item(mymusic_albums_item)
-        self._app.mymusic_uimgr.add_item(mymusic_artists_item)
+        self._app.mymusic_uimgr.add_item(mymusic_fav_item)
 
         loop = asyncio.get_event_loop()
         playlists = await loop.run_in_executor(None, lambda: user.playlists)
@@ -106,6 +94,3 @@ class Nem(QObject):
         if songs is None:
             raise NeteaseIOError('unknown error: get no radio songs')
         return songs
-
-    def explore_music(self):
-        self._app.browser.goto(page='/providers/netease/explore')
