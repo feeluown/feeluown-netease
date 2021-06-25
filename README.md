@@ -12,6 +12,9 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.7.1 (2021-06-25)
+- 修复 https://github.com/feeluown/FeelUOwn/issues/474
+
 ### 0.7 (2021-06-01)
 - 支持云盘歌曲
 - 修复不能显示歌曲评论的问题
