@@ -18,6 +18,7 @@ class BaseSchema(Schema):
 
 
 Schema = BaseSchema
+Unknown = 'Unknown'
 
 
 def create_model(model_cls, data, fields_to_cache=None):
@@ -67,12 +68,14 @@ class NeteaseMvSchema(Schema):
 
 class V2BriefAlbumSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
-    name = fields.Str(required=True)
+    name = fields.Str(required=True, allow_none=True)
     # cover = fields.Str(data_key='picUrl', allow_none=True)
     artist = fields.Dict()
 
     @post_load
     def create_v2_model(self, data, **kwargs):
+        if data['name'] is None:
+            data['name'] = Unknown
         artist = data.pop('artist')
         data['artists_name'] = artist['name']
         return BriefAlbumModel(**data)
@@ -91,7 +94,7 @@ class V2BriefArtistSchema(Schema):
 
 class V2SongSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
-    title = fields.Str(required=True, data_key='name')
+    title = fields.Str(required=True, data_key='name', allow_none=True)
     duration = fields.Float(required=True)
     album = fields.Nested('V2BriefAlbumSchema')
     artists = fields.List(fields.Nested('V2BriefArtistSchema'))
@@ -102,6 +105,9 @@ class V2SongSchema(Schema):
 
     @post_load
     def create_v2_model(self, data, **kwargs):
+        # https://github.com/feeluown/FeelUOwn/issues/499
+        if data['title'] is None:
+            data['title'] = Unknown
         return create_model(SongModel, data, ['mv_id', 'comment_thread_id'])
 
 

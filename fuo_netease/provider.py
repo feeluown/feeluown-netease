@@ -174,7 +174,8 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                                                       song_url_data['type'])
 
             for key, quality in key_quality_mapping.items():
-                if key in song_data:
+                # Ensure the quality info exists.
+                if key in song_data and song_data[key] is not None:
                     # This resource is invalid for current user since the expected
                     # bitrate is large than the highest_bitrate
                     if (song_data[key]['br'] - highest_bitrate) > 10000:
