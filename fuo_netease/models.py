@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 
@@ -95,8 +96,6 @@ class NSongModel(SongModel):
     @classmethod
     def get(cls, identifier):
         tracks_data = cls._api.songs_detail_v3([identifier])
-        if tracks_data[0].get('name', '') == '':
-            return None
         return _deserialize(tracks_data[0], NSongSchemaV3)
 
     @classmethod
@@ -230,6 +229,11 @@ class NSongModel(SongModel):
             else:
                 self.q_media_mapping[quality] = ''
         return self.q_media_mapping.get(quality)
+
+
+class NRadioSongModel(NSongModel):
+    class Meta:
+        allow_get = False
 
 
 class NAlbumModel(AlbumModel, NBaseModel):
