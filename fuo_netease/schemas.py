@@ -179,6 +179,30 @@ class NArtistSchemaV3(Schema):
         return artist
 
 
+class NeteaseDjradioSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    name = fields.Str(required=True)
+    desc = fields.Str(required=False)
+    cover = fields.Str(required=False, data_key='picUrl')
+
+    @post_load
+    def create_model(self, data, **kwargs):
+        return NRadioModel(**data)
+
+
+class NDjradioSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    title = fields.Str(required=True, data_key='name')
+    main_song = fields.Dict(required=True, data_key='mainSong')
+    cover = fields.Str(required=False, data_key='coverUrl')
+
+    @post_load
+    def create_model(self, data, **kwargs):
+        song = data.get('main_song')
+        return NSongModel(identifier=song.get('id'), title=song.get('name'),
+                          cover=song.get('picUrl'), duration=song.get('duration'), artists=[], album=None)
+
+
 class NeteasePlaylistSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     uid = fields.Int(required=True, data_key='userId')
@@ -228,5 +252,5 @@ from .models import (  # noqa
     NSongModel,
     NUserModel,
     NMvModel,
-    NSearchModel
+    NSearchModel, NRadioModel
 )  # noqa
