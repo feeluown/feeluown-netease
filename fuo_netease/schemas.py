@@ -84,6 +84,7 @@ class V2BriefAlbumSchema(Schema):
 class V2BriefArtistSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     name = fields.Str()
+
     # cover = fields.Str(data_key='picUrl', allow_none=True)
     # songs = fields.List(fields.Nested('V2SongSchema'))
 
@@ -179,6 +180,41 @@ class NArtistSchemaV3(Schema):
         return artist
 
 
+class NeteaseDjradioSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    name = fields.Str(required=True)
+    desc = fields.Str(required=False)
+    cover = fields.Str(required=False, data_key='picUrl')
+
+    @post_load
+    def create_model(self, data, **kwargs):
+        return NRadioModel(**data)
+
+
+class NDjradioSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    title = fields.Str(required=True, data_key='name')
+    main_song = fields.Dict(required=True, data_key='mainSong')
+    cover = fields.Str(required=False, data_key='coverUrl')
+    radio = fields.Dict(required=True, data_key='radio')
+
+    @post_load
+    def create_model(self, data, **kwargs):
+        song = data.get('main_song')
+        radio = data.get('radio')
+        artists = []
+        if song.get('artists') is not None:
+            for a in song.get('artists'):
+                artists.append(NArtistModel(identifier=None, name=a.get('name'),
+                                            cover=a.get('picUrl')))
+        album = None
+        if radio is not None and radio.get('name') is not None:
+            album = NAlbumModel(identifier=None, name=radio.get('name'), cover=radio.get('picUrl'),
+                                desc=radio.get('desc'))
+        return NRadioSongModel(identifier=song.get('id'), title=song.get('name'),
+                               cover=song.get('picUrl'), duration=song.get('duration'), artists=artists, album=album)
+
+
 class NeteasePlaylistSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     uid = fields.Int(required=True, data_key='userId')
@@ -228,5 +264,5 @@ from .models import (  # noqa
     NSongModel,
     NUserModel,
     NMvModel,
-    NSearchModel
+    NSearchModel, NRadioModel, NRadioSongModel
 )  # noqa

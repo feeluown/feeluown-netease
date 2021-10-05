@@ -3,6 +3,7 @@
 
 import base64
 import binascii
+import hashlib
 import os
 import json
 import logging
@@ -18,6 +19,7 @@ uri = 'http://music.163.com/api'
 uri_we = 'http://music.163.com/weapi'
 uri_v1 = 'http://music.163.com/weapi/v1'
 uri_v3 = 'http://music.163.com/weapi/v3'
+uri_e = 'https://music.163.com/eapi'
 
 logger = logging.getLogger(__name__)
 
@@ -526,6 +528,30 @@ class API(object):
         payload = self.encrypt_request(data)
         return self.request('POST', url, payload)
 
+    def subscribed_djradio(self, limit=0, offset=0):
+        data = dict(limit=100, time=0, needFee=False)
+        url = uri_e + '/djradio/subed/v1'
+        payload = self.eapi_encrypt(b'/api/djradio/subed/v1', data)
+        return self.request('POST', url, {'params': payload})
+
+    def djradio_detail(self, radio_id):
+        data = dict(id=radio_id)
+        url = uri_e + '/djradio/v2/get'
+        payload = self.eapi_encrypt(b'/api/djradio/v2/get', data)
+        return self.request('POST', url, {'params': payload})
+
+    def djradio_song_detail(self, id_):
+        data = dict(id=id_)
+        url = uri_e + '/dj/program/detail'
+        payload = self.eapi_encrypt(b'/api/dj/program/detail', data)
+        return self.request('POST', url, {'params': payload})
+
+    def djradio_list(self, radio_id, limit=50, offset=0, asc=False):
+        data = dict(radioId=radio_id, limit=limit, offset=offset, asc=asc)
+        url = uri_e + '/v1/dj/program/byradio'
+        payload = self.eapi_encrypt(b'/api/v1/dj/program/byradio', data)
+        return self.request('POST', url, {'params': payload})
+
     def _create_aes_key(self, size):
         return (''.join([hex(b)[2:] for b in os.urandom(size)]))[0:16]
 
@@ -549,6 +575,25 @@ class API(object):
                              int(e, 16), int(n, 16))
         return format(encrypted_text, "x").zfill(256)
 
+    def eapi_encrypt(self, path, params):
+        """
+        eapi接口参数加密
+        :param bytes path: 请求的路径
+        :param params: 请求参数
+        :return str: 加密结果
+        """
+        params = json.dumps(params, separators=(',', ':')).encode()
+        sign_src = b'nobody' + path + b'use' + params + b'md5forencrypt'
+        m = hashlib.md5()
+        m.update(sign_src)
+        sign = m.hexdigest()
+        aes_src = path + b'-36cd479b6b5-' + params + b'-36cd479b6b5-' + sign.encode()
+        pad = 16 - len(aes_src) % 16
+        aes_src = aes_src + bytearray([pad] * pad)
+        crypt = AES.new(b'e82ckenh8dichen8', AES.MODE_ECB)
+        ret = crypt.encrypt(aes_src)
+        return binascii.b2a_hex(ret).upper()
+
     def encrypt_request(self, data):
         text = json.dumps(data)
         first_aes_key = '0CoJUm6Qyw8W8jud'
@@ -565,3 +610,10 @@ class API(object):
 
 
 api = API()
+
+
+if __name__ == '__main__':
+    from fuo_netease.login_controller import LoginController
+    user = LoginController.load()
+    api.load_cookies(user.cookies)
+    print(api.djradio_song_detail(1883706033))

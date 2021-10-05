@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 
@@ -30,17 +31,19 @@ def _deserialize(data, schema_cls):
     return obj
 
 
-def create_g(func, schema=None):
+def create_g(func, schema=None, data_field=None):
     data = func(limit=0)
     if data is None:
         raise NeteaseIOError('server responses with error status code')
+    if data_field is None:
+        data_field = 'data'
 
     count = int(data['count'])
 
     def read_func(start, end):
         data = func(start, end - start)
         return [_deserialize(data, schema)
-                for data in data['data']]
+                for data in data[data_field]]
 
     reader = RandomSequentialReader(count,
                                     read_func=read_func,
@@ -228,6 +231,11 @@ class NSongModel(SongModel):
         return self.q_media_mapping.get(quality)
 
 
+class NRadioSongModel(NSongModel):
+    class Meta:
+        allow_get = False
+
+
 class NAlbumModel(AlbumModel, NBaseModel):
 
     @classmethod
@@ -309,6 +317,33 @@ class NArtistModel(ArtistModel, NBaseModel):
     @desc.setter
     def desc(self, value):
         self._desc = value
+
+
+
+class NRadioModel(PlaylistModel, NBaseModel):
+    class Meta:
+        allow_create_songs_g = True
+
+    def create_songs_g(self):
+        data = self._api.djradio_list(self.identifier, limit=1, offset=0)
+        count = data.get('count', 0)
+
+        def g():
+            offset = 0
+            per = 50  # speed up first request
+            while offset < count:
+                tracks_data = self._api.djradio_list(self.identifier, limit=per, offset=offset)
+                for track_data in tracks_data.get('programs', []):
+                    yield _deserialize(track_data, NDjradioSchema)
+                offset += per
+
+        return SequentialReader(g(), count)
+
+    @classmethod
+    def get(cls, identifier):
+        data = cls._api.djradio_detail(identifier)
+        radio = _deserialize(data, NDjradioSchema)
+        return radio
 
 
 class NPlaylistModel(PlaylistModel, NBaseModel):
@@ -405,6 +440,14 @@ class NUserModel(UserModel, NBaseModel):
         return rec_playlists
 
     @property
+    def fav_djradio(self):
+        return create_g(self._api.subscribed_djradio, NeteaseDjradioSchema, 'djRadios')
+
+    @fav_djradio.setter
+    def fav_djradio(self, _):
+        pass
+
+    @property
     def fav_artists(self):
         return create_g(self._api.user_favorite_artists, NeteaseArtistSchema)
 
@@ -465,5 +508,5 @@ from .schemas import (  # noqa
     NeteaseArtistSchema,
     NeteasePlaylistSchema,
     NeteaseUserSchema,
-    NSongSchemaV3,
+    NSongSchemaV3, NDjradioSchema, NeteaseDjradioSchema,
 )  # noqa

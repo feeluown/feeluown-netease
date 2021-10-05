@@ -36,6 +36,8 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
             self.show_albums(await aio.run_fn(lambda: self._user.fav_albums))
         elif self.tab_id == Tab.artists:
             self.show_artists(await aio.run_fn(lambda: self._user.fav_artists))
+        elif self.tab_id == Tab.playlists:
+            self.show_playlists(await aio.run_fn(lambda: self._user.fav_djradio))
 
     def show_by_tab_id(self, tab_id):
         query = {'tab_id': tab_id.value}
@@ -50,6 +52,6 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
             self.tabbar.albums_btn.setText('收藏的专辑')
             self.tabbar.artists_btn.setText('关注的歌手')
             self.tabbar.videos_btn.hide()
-            self.tabbar.playlists_btn.hide()
+            self.tabbar.playlists_btn.setText('收藏的电台')
         except Exception as e:
             logger.warning(str(e))
