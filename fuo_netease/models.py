@@ -1,16 +1,10 @@
-import json
 import logging
-import time
 
 from marshmallow.exceptions import ValidationError
 
-from fuocore.media import Quality, Media
 from fuocore.models import cached_field
 from fuocore.models import (
     BaseModel,
-    SongModel,
-    LyricModel,
-    MvModel,
     PlaylistModel,
     AlbumModel,
     ArtistModel,
@@ -58,182 +52,6 @@ class NBaseModel(BaseModel):
     class Meta:
         allow_get = True
         provider = provider
-
-
-class NMvModel(MvModel, NBaseModel):
-    class Meta:
-        support_multi_quality = True
-        fields = ['q_url_mapping']
-
-    @classmethod
-    def get(cls, identifier):
-        data = cls._api.get_mv_detail(identifier)
-        if data is not None:
-            mv = _deserialize(data['data'], NeteaseMvSchema)
-            return mv
-        return None
-
-    def list_quality(self):
-        return list(key for key, value in self.q_url_mapping.items()
-                    if value is not None)
-
-    def get_media(self, quality):
-        if isinstance(quality, Quality.Video):  # Quality.Video Enum Item
-            quality = quality.value
-        return self.q_url_mapping.get(quality)
-
-
-class NSongModel(SongModel):
-    _api = provider.api
-
-    class Meta:
-        allow_get = True
-        provider = provider
-        fields = ['mvid', 'q_media_mapping', 'expired_at']
-        fields_no_get = ['q_media_mapping', 'expired_at', 'url']
-        support_multi_quality = True
-
-    @classmethod
-    def get(cls, identifier):
-        tracks_data = cls._api.songs_detail_v3([identifier])
-        return _deserialize(tracks_data[0], NSongSchemaV3)
-
-    @classmethod
-    def list(cls, identifiers):
-        song_data_list = cls._api.songs_detail(identifiers)
-        songs = []
-        for song_data in song_data_list:
-            song = _deserialize(song_data, V2SongSchema)
-            songs.append(song)
-        return songs
-
-    def _refresh_url(self):
-        """刷新获取 url，失败的时候返回空而不是 None"""
-        # FIXME: move q_media_mapping fetch logic to somewhere else
-        songs = self._api.weapi_songs_url([int(self.identifier)], 999000)
-        if songs and songs[0]['url']:
-            self.url = songs[0]['url']
-        else:
-            self.url = ''
-        self.q_media_mapping = {}
-        if songs and songs[0]['url']:
-            media = Media(songs[0]['url'], format=songs[0]['type'],
-                          bitrate=songs[0]['br'] // 1000)
-            if songs[0]['br'] > 320000:
-                self.q_media_mapping = {'shq': media,
-                                        'hq': None,
-                                        'sq': None,
-                                        'lq': None}
-            if songs[0]['br'] == 320000:
-                self.q_media_mapping = {'hq': media,
-                                        'sq': None,
-                                        'lq': None}
-            if songs[0]['br'] == 192000:
-                self.q_media_mapping = {'sq': media,
-                                        'lq': None}
-            if songs[0]['br'] == 128000:
-                self.q_media_mapping = {'lq': media}
-        self.expired_at = int(time.time()) + 60 * 20 * 1
-
-    @property
-    def is_expired(self):
-        return self.expired_at is not None and time.time() >= self.expired_at
-
-    # NOTE: if we want to override model attribute, we must
-    # implement both getter and setter.
-    @property
-    def url(self):
-        """
-        We will always check if this song file exists in local library,
-        if true, we return the url of the local file.
-
-        .. note::
-
-            As netease song url will be expired after a period of time,
-            we can not use static url here. Currently, we assume that the
-            expiration time is 20 minutes, after the url expires, it
-            will be automatically refreshed.
-        """
-        if not self._url:
-            self._refresh_url()
-        elif time.time() > self._expired_at:
-            logger.info('song({}) url is expired, refresh...'.format(self))
-            self._refresh_url()
-        return self._url
-
-    @url.setter
-    def url(self, value):
-        self._expired_at = time.time() + 60 * 20 * 1  # 20 minutes
-        self._url = value
-
-    @property
-    def lyric(self):
-        if self._lyric is not None:
-            assert isinstance(self._lyric, LyricModel)
-            return self._lyric
-        data = self._api.get_lyric_by_songid(self.identifier)
-        lrc = data.get('lrc', {})
-        lyric = lrc.get('lyric', '')
-        self._lyric = LyricModel(
-            identifier=self.identifier,
-            content=lyric
-        )
-        return self._lyric
-
-    @lyric.setter
-    def lyric(self, value):
-        self._lyric = value
-
-    @property
-    def mv(self):
-        if self._mv is not None:
-            return self._mv
-        # 这里可能会先获取一次 mvid
-        if self.mvid is not None:
-            mv = NMvModel.get(self.mvid)
-            if mv is not None:
-                self._mv = mv
-                return self._mv
-        self.mvid = None
-        return None
-
-    @mv.setter
-    def mv(self, value):
-        self._mv = value
-
-    # multi quality support
-
-    def list_quality(self):
-        if self.q_media_mapping is None:
-            self._refresh_url()
-        return list(self.q_media_mapping.keys())
-
-    def get_media(self, quality):
-        if self.is_expired:
-            self._refresh_url()
-        media = self.q_media_mapping.get(quality)
-        if media is None:
-            q_bitrate_mapping = {
-                'shq': 999000,
-                'hq': 320000,
-                'sq': 192000,
-                'lq': 128000,
-            }
-            bitrate = q_bitrate_mapping[quality]
-            songs = self._api.weapi_songs_url([int(self.identifier)], bitrate)
-            if songs and songs[0]['url']:
-                media = Media(songs[0]['url'],
-                              format=songs[0]['type'],
-                              bitrate=songs[0]['br'] // 1000)
-                self.q_media_mapping[quality] = media
-            else:
-                self.q_media_mapping[quality] = ''
-        return self.q_media_mapping.get(quality)
-
-
-class NRadioSongModel(NSongModel):
-    class Meta:
-        allow_get = False
 
 
 class NAlbumModel(AlbumModel, NBaseModel):
@@ -319,7 +137,6 @@ class NArtistModel(ArtistModel, NBaseModel):
         self._desc = value
 
 
-
 class NRadioModel(PlaylistModel, NBaseModel):
     class Meta:
         allow_create_songs_g = True
@@ -332,7 +149,8 @@ class NRadioModel(PlaylistModel, NBaseModel):
             offset = 0
             per = 50  # speed up first request
             while offset < count:
-                tracks_data = self._api.djradio_list(self.identifier, limit=per, offset=offset)
+                tracks_data = self._api.djradio_list(
+                    self.identifier, limit=per, offset=offset)
                 for track_data in tracks_data.get('programs', []):
                     yield _deserialize(track_data, NDjradioSchema)
                 offset += per
@@ -366,7 +184,7 @@ class NPlaylistModel(PlaylistModel, NBaseModel):
                 ids = [track_id['id'] for track_id in track_ids[offset: end]]
                 tracks_data = self._api.songs_detail_v3(ids)
                 for track_data in tracks_data:
-                    yield _deserialize(track_data, NSongSchemaV3)
+                    yield _deserialize(track_data, V2SongSchemaForV3)
                 offset += per
                 per = 800
 
@@ -381,7 +199,7 @@ class NPlaylistModel(PlaylistModel, NBaseModel):
     def add(self, song_id, allow_exist=True):
         rv = self._api.op_music_to_playlist(song_id, self.identifier, 'add')
         if rv == 1:
-            song = NSongModel.get(song_id)
+            song = provider.song_get(song_id)
             self.songs.append(song)
             return True
         elif rv == -1:
@@ -467,7 +285,7 @@ class NUserModel(UserModel, NBaseModel):
         songs = []
         for song_data in songs_data:
             try:
-                song = _deserialize(song_data['simpleSong'], NSongSchemaV3)
+                song = _deserialize(song_data['simpleSong'], V2SongSchemaForV3)
             except ValidationError:
                 # FIXME: 有些云盘歌曲在 netease 上不存在，这时不能把它们转换成
                 # SongModel。因为 SongModel 的逻辑没有考虑 song 不存在的情况。
@@ -503,10 +321,10 @@ class NUserModel(UserModel, NBaseModel):
 # import loop
 from .schemas import (  # noqa
     V2SongSchema,
-    NeteaseMvSchema,
+    V2MvSchema,
     NeteaseAlbumSchema,
     NeteaseArtistSchema,
     NeteasePlaylistSchema,
     NeteaseUserSchema,
-    NSongSchemaV3, NDjradioSchema, NeteaseDjradioSchema,
+    V2SongSchemaForV3, NDjradioSchema, NeteaseDjradioSchema,
 )  # noqa

@@ -2,22 +2,25 @@ import logging
 
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
     CommentModel, BriefCommentModel, BriefUserModel, UserModel, \
-    NoUserLoggedIn
+    NoUserLoggedIn, LyricModel
 from feeluown.media import Quality, Media
 from feeluown.models import ModelType, SearchType
 from .api import API
 
 
 logger = logging.getLogger(__name__)
+SOURCE = 'netease'
 
 
 class NeteaseProvider(AbstractProvider, ProviderV2):
     class meta:
-        identifier = 'netease'
+        identifier = SOURCE
         name = '网易云音乐'
         flags = {
             ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
-                             PF.get | PF.hot_comments | PF.web_url),
+                             PF.get | PF.hot_comments | PF.web_url |
+                             PF.lyric | PF.mv),
+            ModelType.video: (PF.get | PF.multi_quality),
             ModelType.none: PF.current_user,
         }
 
@@ -27,7 +30,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 
     @property
     def identifier(self):
-        return 'netease'
+        return SOURCE
 
     @property
     def name(self):
@@ -50,7 +53,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
     def user_get(self, identifier):
         data = self.api.user_profile(identifier)
         user = UserModel(identifier=str(identifier),
-                         source='netease',
+                         source=SOURCE,
                          name=data['nickname'],
                          avatar_url=data['avatarImg'])
         return user
@@ -63,18 +66,44 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         songs = self.api.get_similar_song(song.identifier)
         return [_deserialize(song, V2SongSchema) for song in songs]
 
+    def song_get_lyric(self, song):
+        data = self.api.get_lyric_by_songid(song.identifier)
+        lrc = data.get('lrc', {})
+        lyric = lrc.get('lyric', '')
+        return LyricModel(
+            source=SOURCE,
+            identifier=self.identifier,
+            content=lyric,
+        )
+
+    def song_get_mv(self, song):
+        cache_key = 'mv_id'
+        mvid, exists = song.cache_get(cache_key)
+        if exists is not True:
+            # FIXME: the following implicitly get mv_id attribute
+            upgraded_song = self.song_get(song.identifier)
+            mvid, exists = upgraded_song.cache_get(cache_key)
+            assert exists is True
+            song.cache_set(cache_key, mvid)
+
+        if mvid:  # if mvid is valid
+            data = self.api.get_mv_detail(mvid)
+            mv = _deserialize(data, V2MvSchema)
+            return mv
+        return None
+
     def song_list_quality(self, song):
         return list(self._song_get_q_media_mapping(song))
 
     def song_list_hot_comments(self, song):
-        comment_thread_id = self._song_get_comment_thread_id(song)
+        comment_thread_id = self._model_cache_get_or_fetch(song, 'comment_thread_id')
         data = self.api.get_comment(comment_thread_id)
         hot_comments_data = data['hotComments']
         hot_comments = []
         for comment_data in hot_comments_data:
             user_data = comment_data['user']
             user = BriefUserModel(identifier=str(user_data['userId']),
-                                  source='netease',
+                                  source=SOURCE,
                                   name=user_data['nickname'])
             be_replied = comment_data['beReplied']
             if be_replied:
@@ -87,7 +116,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             else:
                 parent = None
             comment = CommentModel(identifier=comment_data['commentId'],
-                                   source='netease',
+                                   source=SOURCE,
                                    user=user,
                                    content=comment_data['content'],
                                    liked_count=comment_data['likedCount'],
@@ -96,18 +125,6 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                                    root_comment_id=comment_data['parentCommentId'])
             hot_comments.append(comment)
         return hot_comments
-
-    def _song_get_comment_thread_id(self, song):
-        cache_key = 'comment_thread_id'
-        comment_thread_id, exists = song.cache_get(cache_key)
-        if exists is True:
-            return comment_thread_id
-        # FIXME: the following implicitly get comment_thread_id attribute
-        upgraded_song = self.song_get(song.identifier)
-        comment_thread_id, exists = upgraded_song.cache_get(cache_key)
-        assert exists is True
-        song.cache_set(cache_key, comment_thread_id)
-        return comment_thread_id
 
     def song_get_media(self, song, quality):
         q_media_mapping = self._song_get_q_media_mapping(song)
@@ -189,6 +206,21 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
     def song_get_web_url(self, song):
         return f'https://music.163.com/#/song?id={song.identifier}'
 
+    def video_get(self, identifier):
+        prefix, real_id = identifier.split('_')
+        assert prefix == 'mv'
+        data = self.api.get_mv_detail(real_id)
+        mv = _deserialize(data, V2MvSchema)
+        return mv
+
+    def video_get_media(self, video, quality):
+        q_media_mapping = self._model_cache_get_or_fetch(video, 'q_media_mapping')
+        return q_media_mapping.get(quality)
+
+    def video_list_quality(self, video):
+        q_media_mapping = self._model_cache_get_or_fetch(video, 'q_media_mapping')
+        return list(q_media_mapping.keys())
+
     def search(self, keyword, type_, **kwargs):
         type_ = SearchType.parse(type_)
         type_type_map = {
@@ -209,5 +241,6 @@ provider = NeteaseProvider()
 from .models import _deserialize  # noqa
 from .schemas import (  # noqa
     V2SongSchema,
+    V2MvSchema,
     NeteaseSearchSchema,
 )

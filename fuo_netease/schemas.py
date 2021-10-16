@@ -1,10 +1,22 @@
+"""
+
+关于命名
+~~~~~~~~~~~~~~~
+V2{X}Schema 返回的 model 都是 v2 版本的 Model 实例，也就是从 feeluown.library
+模块导入进来的 Model 类。
+
+{X}SchemaForV3 的数据来源都是 api uri_v3 接口获取的数据。
+"""
+
 import logging
 
 from marshmallow import Schema, post_load, fields, EXCLUDE
 
 from feeluown.library import (
-    SongModel, BriefAlbumModel, BriefArtistModel,
+    SongModel, BriefAlbumModel, BriefArtistModel, ModelState, BriefSongModel,
+    VideoModel,
 )
+from feeluown.media import Quality, MediaType, Media
 from feeluown.models import ModelExistence
 
 logger = logging.getLogger(__name__)
@@ -41,29 +53,35 @@ def create_model(model_cls, data, fields_to_cache=None):
     return model
 
 
-class NeteaseMvSchema(Schema):
+class V2MvSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
-    name = fields.Str(required=True)
+    title = fields.Str(required=True, data_key='name')
     cover = fields.Str(required=True)
     brs = fields.Dict(required=True)
+    artists = fields.List(fields.Nested('V2BriefArtistSchema'))
+    duration = fields.Int(required=True)
 
     @post_load
     def create_model(self, data, **kwargs):
-        brs = data['brs']
-        fhd = hd = sd = ld = None
+        brs = data.pop('brs')
+        q_media_mapping = {}
         for q, url in brs.items():
+            media = Media(url, type_=MediaType.video)
             if q == '1080':
-                fhd = url
+                quality = Quality.Video.fhd
             elif q == '720':
-                hd = url
+                quality = Quality.Video.hd
             elif q == '480':
-                sd = url
+                quality = Quality.Video.sd
             elif q == '240':
-                ld = url
+                quality = Quality.Video.ld
             else:
                 logger.warning('There exists another quality:%s mv.', q)
-        data['q_url_mapping'] = dict(fhd=fhd, hd=hd, sd=sd, ld=ld)
-        return NMvModel(**data)
+                quality = Quality.Video.sd
+            q_media_mapping[quality] = media
+        data['q_media_mapping'] = q_media_mapping
+        data['identifier'] = 'mv_' + str(data['identifier'])
+        return create_model(VideoModel, data, ['q_media_mapping'])
 
 
 class V2BriefAlbumSchema(Schema):
@@ -76,8 +94,9 @@ class V2BriefAlbumSchema(Schema):
     def create_v2_model(self, data, **kwargs):
         if data['name'] is None:
             data['name'] = Unknown
-        artist = data.pop('artist')
-        data['artists_name'] = artist['name']
+        if 'artist' in data:
+            artist = data.pop('artist')
+            data['artists_name'] = artist['name']
         return BriefAlbumModel(**data)
 
 
@@ -112,18 +131,18 @@ class V2SongSchema(Schema):
         return create_model(SongModel, data, ['mv_id', 'comment_thread_id'])
 
 
-class NSongSchemaV3(Schema):
+class V2SongSchemaForV3(Schema):
     identifier = fields.Int(required=True, data_key='id')
-    mvid = fields.Int(required=True, data_key='mv')
     title = fields.Str(required=True, data_key='name')
     duration = fields.Float(required=True, data_key='dt')
-    url = fields.Str(allow_none=True)
-    album = fields.Nested('NAlbumSchemaV3', data_key='al')
-    artists = fields.List(fields.Nested('NArtistSchemaV3'), data_key='ar')
+    album = fields.Nested('V2BriefAlbumSchema', data_key='al')
+    artists = fields.List(fields.Nested('V2BriefArtistSchema'), data_key='ar')
+
+    mv_id = fields.Int(required=True, data_key='mv')
 
     @post_load
-    def create_model(self, data, **kwargs):
-        return NSongModel(**data)
+    def create_v2_model(self, data, **kwargs):
+        return create_model(SongModel, data, ['mv_id'])
 
 
 class NeteaseAlbumSchema(Schema):
@@ -192,27 +211,31 @@ class NeteaseDjradioSchema(Schema):
 
 
 class NDjradioSchema(Schema):
-    identifier = fields.Int(required=True, data_key='id')
-    title = fields.Str(required=True, data_key='name')
+    # identifier = fields.Int(required=True, data_key='id')
+    # title = fields.Str(required=True, data_key='name')
     main_song = fields.Dict(required=True, data_key='mainSong')
-    cover = fields.Str(required=False, data_key='coverUrl')
+    # cover = fields.Str(required=False, data_key='coverUrl')
     radio = fields.Dict(required=True, data_key='radio')
 
     @post_load
     def create_model(self, data, **kwargs):
-        song = data.get('main_song')
-        radio = data.get('radio')
-        artists = []
-        if song.get('artists') is not None:
-            for a in song.get('artists'):
-                artists.append(NArtistModel(identifier=None, name=a.get('name'),
-                                            cover=a.get('picUrl')))
-        album = None
-        if radio is not None and radio.get('name') is not None:
-            album = NAlbumModel(identifier=None, name=radio.get('name'), cover=radio.get('picUrl'),
-                                desc=radio.get('desc'))
-        return NRadioSongModel(identifier=song.get('id'), title=song.get('name'),
-                               cover=song.get('picUrl'), duration=song.get('duration'), artists=artists, album=album)
+
+        def to_duration_ms(duration):
+            seconds = duration / 1000
+            m, s = seconds / 60, seconds % 60
+            return '{:02}:{:02}'.format(int(m), int(s))
+
+        song = data.pop('main_song')
+        album_name = data.pop('radio')['name']
+        artists_name = ','.join([artist['name'] for artist in song['artists']])
+
+        return BriefSongModel(identifier=song['id'],
+                              title=song['name'],
+                              duration_ms=to_duration_ms(song['duration']),
+                              artists_name=artists_name,
+                              album_name=album_name,
+                              state=ModelState.cant_upgrade,
+                              **data)
 
 
 class NeteasePlaylistSchema(Schema):
@@ -261,8 +284,7 @@ from .models import (  # noqa
     NAlbumModel,
     NArtistModel,
     NPlaylistModel,
-    NSongModel,
     NUserModel,
-    NMvModel,
-    NSearchModel, NRadioModel, NRadioSongModel
+    NSearchModel,
+    NRadioModel,
 )  # noqa

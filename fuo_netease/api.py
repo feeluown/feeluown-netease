@@ -435,9 +435,9 @@ class API(object):
         """
         url = uri + '/mv/detail?id=' + str(mvid)
         data = self.request('GET', url)
-        if data['code'] == 404:
-            return None
-        return data
+        if data['code'] == 200:
+            return data['data']
+        raise CodeShouldBe200(data)
 
     def get_lyric_by_songid(self, mid):
         """Get song lyric
