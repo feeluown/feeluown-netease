@@ -12,6 +12,10 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.8 (2021-11-06)
+- 新增个人电台功能
+- 移除老的 SongModel/MvModel 等，适配 library v2
+
 ### 0.7.1 (2021-06-25)
 - 修复 https://github.com/feeluown/FeelUOwn/issues/474
 
