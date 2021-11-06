@@ -2,8 +2,8 @@ import logging
 
 from marshmallow.exceptions import ValidationError
 
-from fuocore.models import cached_field
-from fuocore.models import (
+from feeluown.models import (
+    cached_field,
     BaseModel,
     PlaylistModel,
     AlbumModel,
@@ -11,7 +11,7 @@ from fuocore.models import (
     UserModel,
     SearchModel,
 )
-from fuocore.reader import RandomSequentialReader, SequentialReader
+from feeluown.utils.reader import RandomSequentialReader, SequentialReader
 
 from .provider import provider
 from .excs import NeteaseIOError

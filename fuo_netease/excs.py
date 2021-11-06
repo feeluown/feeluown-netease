@@ -1,4 +1,4 @@
-from fuocore.excs import ProviderIOError
+from feeluown.excs import ProviderIOError
 
 
 class NeteaseIOError(ProviderIOError):
