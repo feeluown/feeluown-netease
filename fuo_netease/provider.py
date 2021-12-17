@@ -92,6 +92,9 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             return mv
         return None
 
+    def upload_song(self, path: str) -> bool:
+        return self.api.cloud_song_upload(path) == 'STATUS_SUCCEEDED'
+
     def song_list_quality(self, song):
         return list(self._song_get_q_media_mapping(song))
 

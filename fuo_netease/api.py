@@ -543,7 +543,7 @@ class API(object):
                     md5sum.update(chunk)
             return md5sum
 
-        from cloud_helpers import cloud_api
+        from .cloud_helpers import cloud_api
         fname = os.path.basename(path)
         fext = path.split('.')[-1]
         '''Parsing file names'''
@@ -586,7 +586,7 @@ class API(object):
             cookies=self._cookies
         )
         print('[-] Response:\n  ', publish_result)
-        return True
+        return 'STATUS_SUCCEEDED'
 
     def subscribed_djradio(self, limit=0, offset=0):
         data = dict(limit=100, time=0, needFee=False)
