@@ -528,6 +528,66 @@ class API(object):
         payload = self.encrypt_request(data)
         return self.request('POST', url, payload)
 
+    def cloud_song_match(self, s_id, as_id):
+        data = dict(songId=s_id, adjustSongId=as_id)
+        url = 'https://music.163.com/api/cloud/user/song/match'
+        payload = self.encrypt_request(data)
+        return self.request('POST', url, payload)
+
+    def cloud_song_upload(self, path):
+        # FIXME: 部分情况需要更新cookies
+        def md5sum(file):
+            md5sum = hashlib.md5()
+            with open(file, 'rb') as f:
+                while chunk := f.read():
+                    md5sum.update(chunk)
+            return md5sum
+
+        from cloud_helpers import cloud_api
+        fname = os.path.basename(path)
+        fext = path.split('.')[-1]
+        '''Parsing file names'''
+        fsize = os.stat(path).st_size
+        md5 = md5sum(path).hexdigest()
+        print('[-] Checking file ( MD5:', md5, ')')
+        cresult = cloud_api.GetCheckCloudUpload(
+            md5,
+            cookies=self._cookies
+        )
+        songId = cresult['songId']
+        '''网盘资源发布 4 步走：
+        1.拿到上传令牌 - 需要文件名，MD5，文件大小'''
+        token = cloud_api.GetNosToken(
+            fname, md5, fsize, fext,
+            cookies=self._cookies
+        )['result']
+        if cresult['needUpload']:
+            print('[+] %s needs to be uploaded ( %s B )' % (fname, fsize))
+            '''2. 若文件未曾上传完毕，则完成其上传'''
+            upload_result = cloud_api.SetUploadObject(
+                open(path, 'rb'),
+                md5, fsize, token['objectKey'], token['token']
+            )
+            print('[-] Response:\n  ', upload_result)
+        print(f'''[!] Assuming upload has finished,preparing to submit    
+        ID  :   {songId}
+        MD5 :   {md5}
+        NAME:   {fname}''')
+        submit_result = cloud_api.SetUploadCloudInfo(
+            token['resourceId'], songId, md5,
+            fname, fname, bitrate=1000,
+            cookies=self._cookies
+        )
+        '''3. 提交资源'''
+        print('[-] Response:\n  ', submit_result)
+        '''4. 发布资源'''
+        publish_result = cloud_api.SetPublishCloudResource(
+            submit_result['songId'],
+            cookies=self._cookies
+        )
+        print('[-] Response:\n  ', publish_result)
+        return True
+
     def subscribed_djradio(self, limit=0, offset=0):
         data = dict(limit=100, time=0, needFee=False)
         url = uri_e + '/djradio/subed/v1'
