@@ -102,13 +102,15 @@ class V2BriefAlbumSchema(Schema):
 
 class V2BriefArtistSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
-    name = fields.Str()
+    name = fields.Str(required=True, allow_none=True)
 
     # cover = fields.Str(data_key='picUrl', allow_none=True)
     # songs = fields.List(fields.Nested('V2SongSchema'))
 
     @post_load
     def create_v2_model(self, data, **kwargs):
+        if data['name'] is None:
+            data['name'] = Unknown
         return BriefArtistModel(**data)
 
 
