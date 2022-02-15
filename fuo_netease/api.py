@@ -530,17 +530,18 @@ class API(object):
 
     def cloud_song_match(self, s_id, as_id):
         data = dict(songId=s_id, adjustSongId=as_id)
-        url = 'https://music.163.com/api/cloud/user/song/match'
+        # url = 'https://music.163.com/api/cloud/user/song/match'
+        url = uri + '/cloud/user/song/match'
         payload = self.encrypt_request(data)
         return self.request('POST', url, payload)
 
     def cloud_song_upload(self, path):
-        # FIXME: 部分情况需要更新cookies
         def md5sum(file):
             md5sum = hashlib.md5()
             with open(file, 'rb') as f:
-                while chunk := f.read():
-                    md5sum.update(chunk)
+                # while chunk := f.read():
+                #     md5sum.update(chunk)
+                md5sum.update(f.read())
             return md5sum
 
         from .cloud_helpers.cloud_api import Cloud_API
