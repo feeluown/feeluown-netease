@@ -543,7 +543,8 @@ class API(object):
                     md5sum.update(chunk)
             return md5sum
 
-        from .cloud_helpers import cloud_api
+        from .cloud_helpers.cloud_api import Cloud_API
+        cloud_api = Cloud_API(self, uri_e)
         fname = os.path.basename(path)
         fext = path.split('.')[-1]
         '''Parsing file names'''
