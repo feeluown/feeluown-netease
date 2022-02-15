@@ -24,5 +24,5 @@ def HashDigest(text):
     return HASH.digest()        
 
 def HashHexDigest(text):
-    #Digests 128 bit md5 hash,then digest it as a hexstring
-    return HexDigest( HashDigest(text) )
+    '''Digests 128 bit md5 hash,then digest it as a hexstring'''
+    return HexDigest(HashDigest(text))

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Miscellaneous implementations of some of  netease's security algorithms
-
 import ctypes,math,json,urllib.parse
 from time import time
 from . import HashDigest,HexDigest,BASE64

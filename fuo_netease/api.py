@@ -52,6 +52,8 @@ class API(object):
 
     def load_cookies(self, cookies):
         self._cookies.update(cookies)
+        # 云盘资源发布仅有似乎不支持osx平台
+        self._cookies.update(dict(appver="7.2.24", os="android"))
 
     def set_http(self, http):
         self._http = http
