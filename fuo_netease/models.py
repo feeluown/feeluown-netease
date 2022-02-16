@@ -72,8 +72,8 @@ def create_cloud_g(func, func_extra, schema=None, schema_extra=None, data_field=
                 # 可能的修复方法：
                 # 1. 在 SongModel 上加一个 flag 来标识该歌曲是否为云盘歌曲，
                 #    如果是的话，则使用 cloud_song_detail 接口来获取相关信息。
-                name = song_data['name']
-                logger.warn(f'cloud song:{name} may not exist on netease, skip it.')
+                # name = song_data['name']
+                # logger.warn(f'cloud song:{name} may not exist on netease, skip it.')
 
                 song_data = func_extra(str(song_data['id']))[data_field][0]
                 song = _deserialize(song_data, schema_extra)
@@ -321,10 +321,13 @@ class NUserModel(UserModel, NBaseModel):
     @fav_albums.setter
     def fav_albums(self, _): pass
 
-    @cached_field()
+    @property
     def cloud_songs(self):
         return create_cloud_g(self._api.cloud_songs, self._api.cloud_songs_detail,
                               V2SongSchemaForV3, NCloudSchema, data_key='simpleSong')
+
+    @cloud_songs.setter
+    def cloud_songs(self, _): pass
 
     # 根据过去经验，每日推荐歌曲在每天早上 6:00 刷新，
     # ttl 设置为 60s 是为了能够比较即时的获取今天推荐。

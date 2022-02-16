@@ -554,7 +554,7 @@ class API(object):
         '''Parsing file names'''
         fsize = os.stat(path).st_size
         md5 = md5sum(path).hexdigest()
-        logger.info(f'[-] Checking file ( MD5: {md5} )')
+        logger.debug(f'[-] Checking file ( MD5: {md5} )')
         cresult = cloud_api.GetCheckCloudUpload(md5)
         songId = cresult['songId']
 
@@ -564,15 +564,15 @@ class API(object):
 
         '''2. 若文件未曾上传完毕，则完成其上传'''
         if cresult['needUpload']:
-            logger.info(f'[+] {fname} needs to be uploaded ( {fsize} B )')
+            logger.debug(f'[+] {fname} needs to be uploaded ( {fsize} B )')
             upload_result = cloud_api.SetUploadObject(
                 open(path, 'rb'),
                 md5, fsize, token['objectKey'], token['token']
             )
-            logger.info(f'[-] Response:\n  {upload_result}')
+            logger.debug(f'[-] Response:\n  {upload_result}')
 
         '''3. 提交资源'''
-        logger.info(f'''[!] Assuming upload has finished,preparing to submit    
+        logger.debug(f'''[!] Assuming upload has finished,preparing to submit    
         ID  :   {songId}
         MD5 :   {md5}
         NAME:   {fname}''')
@@ -584,11 +584,11 @@ class API(object):
             album=metadata.get('album', '.'),
             bitrate=metadata.get('bitrate', 1000)
         )
-        logger.info(f'[-] Response:\n  {submit_result}')
+        logger.debug(f'[-] Response:\n  {submit_result}')
 
         '''4. 发布资源'''
         publish_result = cloud_api.SetPublishCloudResource(submit_result['songId'])
-        logger.info(f'[-] Response:\n  {publish_result}')
+        logger.debug(f'[-] Response:\n  {publish_result}')
 
         return 'STATUS_SUCCEEDED'
 

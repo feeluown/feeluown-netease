@@ -57,6 +57,8 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
             QMessageBox.warning(self.toolbar, '上传音乐', '上传失败！')
         else:
             QMessageBox.information(self.toolbar, '上传音乐', '上传成功！')
+            self._user.cloud_songs = None
+            self.show_by_tab_id(Tab.songs)
 
     def show_by_tab_id(self, tab_id):
         query = {'tab_id': tab_id.value}
