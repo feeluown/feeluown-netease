@@ -45,6 +45,48 @@ def create_g(func, schema=None, data_field=None):
     return reader
 
 
+def create_cloud_g(func, func_extra, schema=None, schema_extra=None, data_field=None, data_key=None, ):
+    data = func(limit=0)
+    if data is None:
+        raise NeteaseIOError('server responses with error status code')
+    if data_field is None:
+        data_field = 'data'
+
+    count = int(data['count'])
+
+    def read_func(start, end):
+        songs_data = func(start, end - start)
+
+        songs = []
+        for song_data in songs_data[data_field]:
+            if data_key:
+                song_data = song_data[data_key]
+            try:
+                song = _deserialize(song_data, schema)
+            except ValidationError:
+                # FIXME: 有些云盘歌曲在 netease 上不存在，这时不能把它们转换成
+                # SongModel。因为 SongModel 的逻辑没有考虑 song 不存在的情况。
+                # 这类歌曲往往没有 ar/al 等字段，在反序列化的时候会报 ValidationError，
+                # 所以这里如果检测到 ValidationError，就跳过这首歌曲。
+                #
+                # 可能的修复方法：
+                # 1. 在 SongModel 上加一个 flag 来标识该歌曲是否为云盘歌曲，
+                #    如果是的话，则使用 cloud_song_detail 接口来获取相关信息。
+                name = song_data['name']
+                logger.warn(f'cloud song:{name} may not exist on netease, skip it.')
+
+                song_data = func_extra(str(song_data['id']))[data_field][0]
+                song = _deserialize(song_data, schema_extra)
+            songs.append(song)
+
+        return songs
+
+    reader = RandomSequentialReader(count,
+                                    read_func=read_func,
+                                    max_per_read=200)
+    return reader
+
+
 class NBaseModel(BaseModel):
     # FIXME: remove _detail_fields and _api to Meta
     _api = provider.api
@@ -281,25 +323,8 @@ class NUserModel(UserModel, NBaseModel):
 
     @cached_field()
     def cloud_songs(self):
-        songs_data = self._api.cloud_songs()
-        songs = []
-        for song_data in songs_data:
-            try:
-                song = _deserialize(song_data['simpleSong'], V2SongSchemaForV3)
-            except ValidationError:
-                # FIXME: 有些云盘歌曲在 netease 上不存在，这时不能把它们转换成
-                # SongModel。因为 SongModel 的逻辑没有考虑 song 不存在的情况。
-                # 这类歌曲往往没有 ar/al 等字段，在反序列化的时候会报 ValidationError，
-                # 所以这里如果检测到 ValidationError，就跳过这首歌曲。
-                #
-                # 可能的修复方法：
-                # 1. 在 SongModel 上加一个 flag 来标识该歌曲是否为云盘歌曲，
-                #    如果是的话，则使用 cloud_song_detail 接口来获取相关信息。
-                name = song_data['simpleSong']['name']
-                logger.warn(f'cloud song:{name} may not exist on netease, skip it.')
-            else:
-                songs.append(song)
-        return songs
+        return create_cloud_g(self._api.cloud_songs, self._api.cloud_songs_detail,
+                              V2SongSchemaForV3, NCloudSchema, data_key='simpleSong')
 
     # 根据过去经验，每日推荐歌曲在每天早上 6:00 刷新，
     # ttl 设置为 60s 是为了能够比较即时的获取今天推荐。
@@ -326,5 +351,5 @@ from .schemas import (  # noqa
     NeteaseArtistSchema,
     NeteasePlaylistSchema,
     NeteaseUserSchema,
-    V2SongSchemaForV3, NDjradioSchema, NeteaseDjradioSchema,
+    V2SongSchemaForV3, NDjradioSchema, NeteaseDjradioSchema, NCloudSchema,
 )  # noqa

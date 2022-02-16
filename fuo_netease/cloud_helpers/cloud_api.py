@@ -1,8 +1,12 @@
+import os
 import requests
 import json
+import logging
 
 from . import security
 BUCKET = 'jd-musicrep-privatecloud-audio-public'
+
+logger = logging.getLogger(__name__)
 
 
 def GenerateCheckToken():
@@ -11,11 +15,45 @@ def GenerateCheckToken():
 
 
 class Cloud_API:
+
     def __init__(self, api, uri_e):
         self.api = api
         self.uri_e = uri_e
 
-    def GetCheckCloudUpload(self, md5, ext='', length=0, bitrate=0, songId=0, version=1, cookies=None):
+    def GetMetadata(self, fpath):
+        from mutagen import MutagenError
+        from mutagen.mp3 import EasyMP3
+        from mutagen.easymp4 import EasyMP4
+        from mutagen.flac import FLAC
+        from mutagen.apev2 import APEv2
+
+        try:
+            if fpath.endswith('mp3') or fpath.endswith('ogg') or fpath.endswith('wma'):
+                audio = EasyMP3(fpath)
+            elif fpath.endswith('m4a') or fpath.endswith('m4v') or fpath.endswith('mp4'):
+                audio = EasyMP4(fpath)
+            elif fpath.endswith('flac'):
+                audio = FLAC(fpath)
+            elif fpath.endswith('ape'):
+                audio = APEv2(fpath)
+            elif fpath.endswith('wav'):
+                audio = dict()
+        except MutagenError as e:
+            logger.warning(
+                'Mutagen parse metadata failed, ignore.\n'
+                'file: {}, exception: {}'.format(fpath, str(e)))
+            return None
+
+        metadata_dict = dict(audio)
+        for key in metadata_dict.keys():
+            metadata_dict[key] = metadata_dict[key][0]
+        if 'title' not in metadata_dict:
+            title = os.path.split(fpath)[-1].split('.')[0]
+            metadata_dict['title'] = title
+        metadata_dict['bitrate'] = audio.info.bitrate // 1000
+        return metadata_dict
+
+    def GetCheckCloudUpload(self, md5, ext='', length=0, bitrate=0, songId=0, version=1):
         '''移动端 - 检查云盘资源
 
         Args:
@@ -29,15 +67,20 @@ class Cloud_API:
         Returns:
             dict
         '''
-        data = {"songId": str(songId), "version": str(version), "md5": str(md5),
-                "length": str(length), "ext": str(ext), "bitrate": str(bitrate),
-                "checkToken": GenerateCheckToken()}
+        data = {
+            'songId': str(songId),
+            'version': str(version),
+            'md5': str(md5),
+            'length': str(length),
+            'ext': str(ext),
+            'bitrate': str(bitrate),
+            'checkToken': GenerateCheckToken()
+        }
         url = self.uri_e + '/cloud/upload/check'
         payload = self.api.eapi_encrypt(b'/api/cloud/upload/check', data)
         return self.api.request('POST', url, {'params': payload})
 
-    def GetNosToken(self, filename, md5, fileSize, ext, type='audio', nos_product=3, bucket=BUCKET, local=False,
-                    cookies=None):
+    def GetNosToken(self, filename, md5, fileSize, ext, type='audio', nos_product=3, bucket=BUCKET, local=False):
         '''移动端 - 云盘占位
 
         Args:
@@ -53,9 +96,17 @@ class Cloud_API:
         Returns:
             dict
         '''
-        data = {"type": str(type), "nos_product": str(nos_product), "md5": str(md5),
-                "local": str(local).lower(), "filename": str(filename), "fileSize": str(fileSize),
-                "ext": str(ext), "bucket": str(bucket), "checkToken": GenerateCheckToken()}
+        data = {
+            'type': str(type),
+            'nos_product': str(nos_product),
+            'md5': str(md5),
+            'local': str(local).lower(),
+            'filename': str(filename),
+            'fileSize': str(fileSize),
+            'ext': str(ext),
+            'bucket': str(bucket),
+            'checkToken': GenerateCheckToken()
+        }
         url = self.uri_e + '/nos/token/alloc'
         payload = self.api.eapi_encrypt(b'/api/nos/token/alloc', data)
         return self.api.request('POST', url, {'params': payload})
@@ -91,8 +142,7 @@ class Cloud_API:
         )
         return json.loads(r.text)
 
-    def SetUploadCloudInfo(self, resourceId, songid, md5, filename, song='.', artist='.', album='.', bitrate=128,
-                           cookies=None):
+    def SetUploadCloudInfo(self, resourceId, songid, md5, filename, song='.', artist='.', album='.', bitrate=128):
         '''移动端 - 云盘资源提交
 
         注：
@@ -114,14 +164,21 @@ class Cloud_API:
         Returns:
             dict
         '''
-        data = {"resourceId": str(resourceId), "songid": str(songid), "md5": str(md5),
-                "filename": str(filename), "song": str(song), "artist": str(artist),
-                "album": str(album), "bitrate": bitrate}
+        data = {
+            'resourceId': str(resourceId),
+            'songid': str(songid),
+            'md5': str(md5),
+            'filename': str(filename),
+            'song': str(song),
+            'artist': str(artist),
+            'album': str(album),
+            'bitrate': bitrate
+        }
         url = self.uri_e + '/upload/cloud/info/v2'
         payload = self.api.eapi_encrypt(b'/api/upload/cloud/info/v2', data)
         return self.api.request('POST', url, {'params': payload})
 
-    def SetPublishCloudResource(self, songid, cookies=None):
+    def SetPublishCloudResource(self, songid):
         '''移动端 - 云盘资源发布
 
         Args:
@@ -130,7 +187,10 @@ class Cloud_API:
         Returns:
             SetUploadCloudInfo
         '''
-        data = {"songid": str(songid), "checkToken": GenerateCheckToken()}
+        data = {
+            'songid': str(songid),
+            'checkToken': GenerateCheckToken()
+        }
         url = self.uri_e + '/cloud/pub/v2'
         payload = self.api.eapi_encrypt(b'/api/cloud/pub/v2', data)
         return self.api.request('POST', url, {'params': payload})

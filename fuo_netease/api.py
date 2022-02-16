@@ -515,7 +515,7 @@ class API(object):
         payload = self.encrypt_request(data)
         res_data = self.request('POST', url, payload)
         if res_data['code'] == 200:
-            return res_data['data']
+            return res_data
         raise CodeShouldBe200(res_data)
 
     def cloud_songs_detail(self, music_ids):
@@ -548,48 +548,48 @@ class API(object):
 
         from .cloud_helpers.cloud_api import Cloud_API
         cloud_api = Cloud_API(self, uri_e)
+
         fname = os.path.basename(path)
         fext = path.split('.')[-1]
         '''Parsing file names'''
         fsize = os.stat(path).st_size
         md5 = md5sum(path).hexdigest()
-        print('[-] Checking file ( MD5:', md5, ')')
-        cresult = cloud_api.GetCheckCloudUpload(
-            md5,
-            cookies=self._cookies
-        )
+        logger.info(f'[-] Checking file ( MD5: {md5} )')
+        cresult = cloud_api.GetCheckCloudUpload(md5)
         songId = cresult['songId']
-        '''网盘资源发布 4 步走：
-        1.拿到上传令牌 - 需要文件名，MD5，文件大小'''
-        token = cloud_api.GetNosToken(
-            fname, md5, fsize, fext,
-            cookies=self._cookies
-        )['result']
+
+        '''网盘资源发布 4 步走：'''
+        '''1.拿到上传令牌 - 需要文件名，MD5，文件大小'''
+        token = cloud_api.GetNosToken(fname, md5, fsize, fext)['result']
+
+        '''2. 若文件未曾上传完毕，则完成其上传'''
         if cresult['needUpload']:
-            print('[+] %s needs to be uploaded ( %s B )' % (fname, fsize))
-            '''2. 若文件未曾上传完毕，则完成其上传'''
+            logger.info(f'[+] {fname} needs to be uploaded ( {fsize} B )')
             upload_result = cloud_api.SetUploadObject(
                 open(path, 'rb'),
                 md5, fsize, token['objectKey'], token['token']
             )
-            print('[-] Response:\n  ', upload_result)
-        print(f'''[!] Assuming upload has finished,preparing to submit    
+            logger.info(f'[-] Response:\n  {upload_result}')
+
+        '''3. 提交资源'''
+        logger.info(f'''[!] Assuming upload has finished,preparing to submit    
         ID  :   {songId}
         MD5 :   {md5}
         NAME:   {fname}''')
+        metadata = cloud_api.GetMetadata(path)
         submit_result = cloud_api.SetUploadCloudInfo(
-            token['resourceId'], songId, md5,
-            fname, fname, bitrate=1000,
-            cookies=self._cookies
+            token['resourceId'], songId, md5, fname,
+            song=metadata.get('title', '.'),
+            artist=metadata.get('artist', '.'),
+            album=metadata.get('album', '.'),
+            bitrate=metadata.get('bitrate', 1000)
         )
-        '''3. 提交资源'''
-        print('[-] Response:\n  ', submit_result)
+        logger.info(f'[-] Response:\n  {submit_result}')
+
         '''4. 发布资源'''
-        publish_result = cloud_api.SetPublishCloudResource(
-            submit_result['songId'],
-            cookies=self._cookies
-        )
-        print('[-] Response:\n  ', publish_result)
+        publish_result = cloud_api.SetPublishCloudResource(submit_result['songId'])
+        logger.info(f'[-] Response:\n  {publish_result}')
+
         return 'STATUS_SUCCEEDED'
 
     def subscribed_djradio(self, limit=0, offset=0):
