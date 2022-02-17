@@ -36,9 +36,12 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
 
         if self.tab_id == Tab.songs:
             self.show_songs(await aio.run_fn(lambda: self._user.cloud_songs))
-            btn = TextButton('上传音乐', self.toolbar)
-            btn.clicked.connect(self._upload_song)
-            self.toolbar.add_tmp_button(btn)
+            upload_btn = TextButton('上传音乐', self.toolbar)
+            upload_btn.clicked.connect(lambda: aio.run_afn(self._upload_cloud_songs))
+            self.toolbar.add_tmp_button(upload_btn)
+            refresh_btn = TextButton('刷新音乐', self.toolbar)
+            refresh_btn.clicked.connect(self._refresh_cloud_songs)
+            self.toolbar.add_tmp_button(refresh_btn)
         elif self.tab_id == Tab.albums:
             self.show_albums(await aio.run_fn(lambda: self._user.fav_albums))
         elif self.tab_id == Tab.artists:
@@ -46,19 +49,24 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
         elif self.tab_id == Tab.playlists:
             self.show_playlists(await aio.run_fn(lambda: self._user.fav_djradio))
 
-    def _upload_song(self):
-        path, _ = QFileDialog.getOpenFileName(self.toolbar, '选择文件', Path.home().as_posix(),
-                                              # 'Audio Files (*.mp3 *.m4a);; All Files (*.*)')
-                                              'Supported Files (*.mp3 *.m4a *.wma *.flac *.ogg);; All Files (*.*)')
+    async def _upload_cloud_songs(self):
+        # FIXME: 目前无法根据当前页面进行自动刷新, 只能手动刷新
+        path, _ = QFileDialog.getOpenFileName(
+            self.toolbar, '选择文件', Path.home().as_posix(),
+            'Supported Files (*.mp3 *.m4a *.wma *.flac *.ogg);; All Files (*.*)')
         if path == '':
             return
-        ok = self._user.meta.provider.upload_song(path)
+
+        ok = await aio.run_fn(self._user.meta.provider.upload_song, path)
         if not ok:
             QMessageBox.warning(self.toolbar, '上传音乐', '上传失败！')
         else:
             QMessageBox.information(self.toolbar, '上传音乐', '上传成功！')
-            self._user.cloud_songs = None
-            self.show_by_tab_id(Tab.songs)
+            # self._refresh_cloud_songs()
+
+    def _refresh_cloud_songs(self):
+        self._user.cloud_songs = None
+        self.show_by_tab_id(Tab.songs)
 
     def show_by_tab_id(self, tab_id):
         query = {'tab_id': tab_id.value}

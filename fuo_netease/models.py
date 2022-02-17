@@ -45,7 +45,7 @@ def create_g(func, schema=None, data_field=None):
     return reader
 
 
-def create_cloud_g(func, func_extra, schema=None, schema_extra=None, data_field=None, data_key=None, ):
+def create_cloud_songs_g(func, func_extra, schema=None, schema_extra=None, data_field=None, data_key=None):
     data = func(limit=0)
     if data is None:
         raise NeteaseIOError('server responses with error status code')
@@ -58,7 +58,8 @@ def create_cloud_g(func, func_extra, schema=None, schema_extra=None, data_field=
         songs_data = func(start, end - start)
 
         songs = []
-        for song_data in songs_data[data_field]:
+        extra_songs_info = []
+        for idx, song_data in enumerate(songs_data[data_field]):
             if data_key:
                 song_data = song_data[data_key]
             try:
@@ -74,10 +75,18 @@ def create_cloud_g(func, func_extra, schema=None, schema_extra=None, data_field=
                 #    如果是的话，则使用 cloud_song_detail 接口来获取相关信息。
                 # name = song_data['name']
                 # logger.warn(f'cloud song:{name} may not exist on netease, skip it.')
+                extra_songs_info.append((idx, song_data['id']))
+                # song_data = func_extra(str(song_data['id']))[data_field][0]
+                # song = _deserialize(song_data, schema_extra)
+            else:
+                songs.append(song)
 
-                song_data = func_extra(str(song_data['id']))[data_field][0]
+        if extra_songs_info:
+            extra_song_ids = ','.join([str(id) for (_, id) in extra_songs_info])
+            extra_songs_data = func_extra(extra_song_ids)
+            for idx, song_data in enumerate(extra_songs_data[data_field]):
                 song = _deserialize(song_data, schema_extra)
-            songs.append(song)
+                songs.insert(extra_songs_info[idx][0], song)
 
         return songs
 
@@ -323,8 +332,8 @@ class NUserModel(UserModel, NBaseModel):
 
     @property
     def cloud_songs(self):
-        return create_cloud_g(self._api.cloud_songs, self._api.cloud_songs_detail,
-                              V2SongSchemaForV3, NCloudSchema, data_key='simpleSong')
+        return create_cloud_songs_g(self._api.cloud_songs, self._api.cloud_songs_detail,
+                                    V2SongSchemaForV3, NCloudSchema, data_key='simpleSong')
 
     @cloud_songs.setter
     def cloud_songs(self, _): pass

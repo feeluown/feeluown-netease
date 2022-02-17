@@ -556,22 +556,30 @@ class API(object):
         md5 = md5sum(path).hexdigest()
         logger.debug(f'[-] Checking file ( MD5: {md5} )')
         cresult = cloud_api.GetCheckCloudUpload(md5)
-        songId = cresult['songId']
+        if cresult['code'] != 200:
+            return 'UPLOAD_CHECK_FAILED'
 
         '''网盘资源发布 4 步走：'''
         '''1.拿到上传令牌 - 需要文件名，MD5，文件大小'''
-        token = cloud_api.GetNosToken(fname, md5, fsize, fext)['result']
+        token = cloud_api.GetNosToken(fname, md5, fsize, fext)
+        if token['code'] != 200:
+            return 'TOKEN_ALLOC_FAILED'
+        token = token['result']
 
         '''2. 若文件未曾上传完毕，则完成其上传'''
         if cresult['needUpload']:
-            logger.debug(f'[+] {fname} needs to be uploaded ( {fsize} B )')
-            upload_result = cloud_api.SetUploadObject(
-                open(path, 'rb'),
-                md5, fsize, token['objectKey'], token['token']
-            )
+            logger.info(f'[+] {fname} needs to be uploaded ( {fsize} B )')
+            try:
+                upload_result = cloud_api.SetUploadObject(
+                    open(path, 'rb'),
+                    md5, fsize, token['objectKey'], token['token']
+                )
+            except Exception:
+                return 'UPLOAD_FAILED'
             logger.debug(f'[-] Response:\n  {upload_result}')
 
         '''3. 提交资源'''
+        songId = cresult['songId']
         logger.debug(f'''[!] Assuming upload has finished,preparing to submit    
         ID  :   {songId}
         MD5 :   {md5}
@@ -584,10 +592,14 @@ class API(object):
             album=metadata.get('album', '.'),
             bitrate=metadata.get('bitrate', 1000)
         )
+        if submit_result['code'] != 200:
+            return 'SUBMIT_FAILED'
         logger.debug(f'[-] Response:\n  {submit_result}')
 
         '''4. 发布资源'''
         publish_result = cloud_api.SetPublishCloudResource(submit_result['songId'])
+        if publish_result['code'] != 200:
+            return 'PUBLISH_FAILED'
         logger.debug(f'[-] Response:\n  {publish_result}')
 
         return 'STATUS_SUCCEEDED'
