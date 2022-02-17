@@ -254,6 +254,7 @@ class NCloudSchema(Schema):
         song = data.pop('main_song')
 
         # FIXME: 上传文件为m4a格式时可能无法播放
+        # FIXME: 对于SimpleSong duo_dl相关逻辑可能会引发error
         return BriefSongModel(identifier=song['id'],
                               title=song['name'],
                               duration_ms=to_duration_ms(song['dt']),
