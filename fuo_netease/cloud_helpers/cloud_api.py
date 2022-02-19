@@ -50,7 +50,6 @@ class Cloud_API:
         if 'title' not in metadata_dict:
             title = os.path.split(fpath)[-1].split('.')[0]
             metadata_dict['title'] = title
-        metadata_dict['bitrate'] = audio.info.bitrate // 1000
         return metadata_dict
 
     def GetCheckCloudUpload(self, md5, ext='', length=0, bitrate=0, songId=0, version=1):
@@ -142,7 +141,7 @@ class Cloud_API:
         )
         return json.loads(r.text)
 
-    def SetUploadCloudInfo(self, resourceId, songid, md5, filename, song='.', artist='.', album='.', bitrate=128):
+    def SetUploadCloudInfo(self, resourceId, songid, md5, filename, song='.', artist='.', album='.'):
         '''移动端 - 云盘资源提交
 
         注：
@@ -157,7 +156,6 @@ class Cloud_API:
             song (str, optional): 歌名 / 标题. Defaults to ''.
             artist (str, optional): 艺术家名. Defaults to ''.
             album (str, optional): 专辑名. Defaults to ''.
-            bitrate (int, optional): 音频 - 比特率. Defaults to 0.
 
         WIP - 封面ID,歌词ID 等
 
@@ -171,8 +169,7 @@ class Cloud_API:
             'filename': str(filename),
             'song': str(song),
             'artist': str(artist),
-            'album': str(album),
-            'bitrate': bitrate
+            'album': str(album)
         }
         url = self.uri_e + '/upload/cloud/info/v2'
         payload = self.api.eapi_encrypt(b'/api/upload/cloud/info/v2', data)

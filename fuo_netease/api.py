@@ -589,8 +589,7 @@ class API(object):
             token['resourceId'], songId, md5, fname,
             song=metadata.get('title', '.'),
             artist=metadata.get('artist', '.'),
-            album=metadata.get('album', '.'),
-            bitrate=metadata.get('bitrate', 1000)
+            album=metadata.get('album', '.')
         )
         if submit_result['code'] != 200:
             return 'SUBMIT_FAILED'
