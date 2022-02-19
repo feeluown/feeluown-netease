@@ -82,6 +82,7 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
             'Supported Files (*.mp3 *.m4a *.wma *.flac *.ogg);; All Files (*.*)')
         if not paths:
             return
+
         for idx, path in enumerate(paths):
             ok = await aio.run_fn(self._user.meta.provider.upload_song, path)
             if ok:

@@ -530,12 +530,12 @@ class API(object):
         payload = self.encrypt_request(data)
         return self.request('POST', url, payload)
 
-    def cloud_song_match(self, s_id, as_id):
-        data = dict(songId=s_id, adjustSongId=as_id)
-        # url = 'https://music.163.com/api/cloud/user/song/match'
-        url = uri + '/cloud/user/song/match'
-        payload = self.encrypt_request(data)
-        return self.request('POST', url, payload)
+    def cloud_song_match(self, sid, asid):
+        url = uri + f'/cloud/user/song/match?songId={sid}&adjustSongId={asid}'
+        data = self.request('GET', url)
+        if data['code'] == 200:
+            return data['data']
+        raise CodeShouldBe200(data)
 
     def cloud_song_upload(self, path):
         def md5sum(file):
