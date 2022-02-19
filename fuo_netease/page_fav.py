@@ -51,6 +51,7 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
 
     async def _upload_cloud_songs(self):
         # FIXME: 目前无法根据当前页面进行自动刷新, 只能手动刷新
+        # FIXME: 本地音乐还没扫描完成式, 可能会出现线程错误
         path, _ = QFileDialog.getOpenFileName(
             self.toolbar, '选择文件', Path.home().as_posix(),
             'Supported Files (*.mp3 *.m4a *.wma *.flac *.ogg);; All Files (*.*)')

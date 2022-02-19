@@ -33,6 +33,7 @@ setup(
         'pycryptodome',
         'marshmallow>=3.0',
         'requests',
+        'mutagen>=1.37',
     ],
     entry_points={
         'fuo.plugins_v1': [
