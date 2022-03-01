@@ -240,6 +240,28 @@ class NDjradioSchema(Schema):
                               **data)
 
 
+class NCloudSchema(Schema):
+    main_song = fields.Dict(required=True, data_key='simpleSong')
+    album_name = fields.Str(required=True, data_key='album')
+    artists_name = fields.Str(required=True, data_key='artist')
+
+    @post_load
+    def create_model(self, data, **kwargs):
+
+        def to_duration_ms(duration):
+            seconds = duration / 1000
+            m, s = seconds / 60, seconds % 60
+            return '{:02}:{:02}'.format(int(m), int(s))
+
+        song = data.pop('main_song')
+
+        return BriefSongModel(identifier=song['id'],
+                              title=song['name'],
+                              duration_ms=to_duration_ms(song['dt']),
+                              state=ModelState.cant_upgrade,
+                              **data)
+
+
 class NeteasePlaylistSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     uid = fields.Int(required=True, data_key='userId')

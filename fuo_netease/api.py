@@ -52,6 +52,8 @@ class API(object):
 
     def load_cookies(self, cookies):
         self._cookies.update(cookies)
+        # 云盘资源发布仅有似乎不支持osx平台
+        self._cookies.update(dict(appver="7.2.24", os="android"))
 
     def set_http(self, http):
         self._http = http
@@ -513,7 +515,7 @@ class API(object):
         payload = self.encrypt_request(data)
         res_data = self.request('POST', url, payload)
         if res_data['code'] == 200:
-            return res_data['data']
+            return res_data
         raise CodeShouldBe200(res_data)
 
     def cloud_songs_detail(self, music_ids):
@@ -527,6 +529,79 @@ class API(object):
         url = uri_we + '/cloud/del'
         payload = self.encrypt_request(data)
         return self.request('POST', url, payload)
+
+    def cloud_song_match(self, sid, asid):
+        url = uri + f'/cloud/user/song/match?songId={sid}&adjustSongId={asid}'
+        data = self.request('GET', url)
+        if data['code'] == 200:
+            return data['data']
+        raise CodeShouldBe200(data)
+
+    def cloud_song_upload(self, path):
+        def md5sum(file):
+            md5sum = hashlib.md5()
+            with open(file, 'rb') as f:
+                # while chunk := f.read():
+                #     md5sum.update(chunk)
+                md5sum.update(f.read())
+            return md5sum
+
+        from .cloud_helpers.cloud_api import Cloud_API
+        cloud_api = Cloud_API(self, uri_e)
+
+        fname = os.path.basename(path)
+        fext = path.split('.')[-1]
+        '''Parsing file names'''
+        fsize = os.stat(path).st_size
+        md5 = md5sum(path).hexdigest()
+        logger.debug(f'[-] Checking file ( MD5: {md5} )')
+        cresult = cloud_api.GetCheckCloudUpload(md5)
+        if cresult['code'] != 200:
+            return 'UPLOAD_CHECK_FAILED'
+
+        '''网盘资源发布 4 步走：'''
+        '''1.拿到上传令牌 - 需要文件名，MD5，文件大小'''
+        token = cloud_api.GetNosToken(fname, md5, fsize, fext)
+        if token['code'] != 200:
+            return 'TOKEN_ALLOC_FAILED'
+        token = token['result']
+
+        '''2. 若文件未曾上传完毕，则完成其上传'''
+        if cresult['needUpload']:
+            logger.info(f'[+] {fname} needs to be uploaded ( {fsize} B )')
+            try:
+                upload_result = cloud_api.SetUploadObject(
+                    open(path, 'rb'),
+                    md5, fsize, token['objectKey'], token['token']
+                )
+            except Exception:
+                return 'UPLOAD_FAILED'
+            logger.debug(f'[-] Response:\n  {upload_result}')
+
+        '''3. 提交资源'''
+        songId = cresult['songId']
+        logger.debug(f'''[!] Assuming upload has finished,preparing to submit    
+        ID  :   {songId}
+        MD5 :   {md5}
+        NAME:   {fname}''')
+        metadata = cloud_api.GetMetadata(path)
+        submit_result = cloud_api.SetUploadCloudInfo(
+            token['resourceId'], songId, md5, fname,
+            song=metadata.get('title', '.'),
+            artist=metadata.get('artist', '.'),
+            album=metadata.get('album', '.')
+        )
+        if submit_result['code'] != 200:
+            return 'SUBMIT_FAILED'
+        logger.debug(f'[-] Response:\n  {submit_result}')
+
+        '''4. 发布资源'''
+        publish_result = cloud_api.SetPublishCloudResource(submit_result['songId'])
+        if publish_result['code'] != 200:
+            return 'PUBLISH_FAILED'
+        logger.debug(f'[-] Response:\n  {publish_result}')
+
+        return 'STATUS_SUCCEEDED'
 
     def subscribed_djradio(self, limit=0, offset=0):
         data = dict(limit=100, time=0, needFee=False)
