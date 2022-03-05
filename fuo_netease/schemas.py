@@ -14,7 +14,7 @@ from marshmallow import Schema, post_load, fields, EXCLUDE
 
 from feeluown.library import (
     SongModel, BriefAlbumModel, BriefArtistModel, ModelState, BriefSongModel,
-    VideoModel,
+    VideoModel, AlbumModel,
 )
 from feeluown.media import Quality, MediaType, Media
 from feeluown.models import ModelExistence
@@ -147,17 +147,19 @@ class V2SongSchemaForV3(Schema):
         return create_model(SongModel, data, ['mv_id'])
 
 
-class NeteaseAlbumSchema(Schema):
+class V2AlbumSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     name = fields.Str(required=True)
     cover = fields.Str(data_key='picUrl', allow_none=True)
+    artists = fields.List(fields.Nested('V2BriefArtistSchema'))
     # 收藏和搜索接口返回的 album 数据中的 songs 为 None
     songs = fields.List(fields.Nested('V2SongSchema'), allow_none=True)
-    artists = fields.List(fields.Nested('NeteaseArtistSchema'))
+    # Description is fetched seperatelly by `album_desc` API.
+    description = fields.Str(missing='')
 
     @post_load
-    def create_model(self, data, **kwargs):
-        return NAlbumModel(**data)
+    def create_v2_model(self, data, **kwargs):
+        return AlbumModel(**data)
 
 
 class NAlbumSchemaV3(Schema):
@@ -168,9 +170,9 @@ class NAlbumSchemaV3(Schema):
 
     @post_load
     def create_model(self, data, **kwargs):
-        album = NAlbumModel(**data)
+        album = BriefAlbumModel(**data)
         if album.identifier == 0:
-            album.exists = ModelExistence.no
+            album.state = ModelState.not_exists
             album.name = ''
         return album
 
@@ -295,7 +297,7 @@ class NeteaseUserSchema(Schema):
 class NeteaseSearchSchema(Schema):
     """搜索结果 Schema"""
     songs = fields.List(fields.Nested(V2SongSchema))
-    albums = fields.List(fields.Nested(NeteaseAlbumSchema))
+    albums = fields.List(fields.Nested(V2AlbumSchema))
     artists = fields.List(fields.Nested(NeteaseArtistSchema))
     playlists = fields.List(fields.Nested(NeteasePlaylistSchema))
 
@@ -305,7 +307,6 @@ class NeteaseSearchSchema(Schema):
 
 
 from .models import (  # noqa
-    NAlbumModel,
     NArtistModel,
     NPlaylistModel,
     NUserModel,

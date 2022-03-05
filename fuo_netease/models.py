@@ -6,7 +6,6 @@ from feeluown.models import (
     cached_field,
     BaseModel,
     PlaylistModel,
-    AlbumModel,
     ArtistModel,
     UserModel,
     SearchModel,
@@ -45,7 +44,8 @@ def create_g(func, schema=None, data_field=None):
     return reader
 
 
-def create_cloud_songs_g(func, func_extra, schema=None, schema_extra=None, data_field=None, data_key=None):
+def create_cloud_songs_g(func, func_extra, schema=None, schema_extra=None,
+                         data_field=None, data_key=None):
     data = func(limit=0)
     if data is None:
         raise NeteaseIOError('server responses with error status code')
@@ -105,27 +105,6 @@ class NBaseModel(BaseModel):
         provider = provider
 
 
-class NAlbumModel(AlbumModel, NBaseModel):
-
-    @classmethod
-    def get(cls, identifier):
-        album_data = cls._api.album_infos(identifier)
-        if album_data is None:
-            return None
-        album = _deserialize(album_data, NeteaseAlbumSchema)
-        return album
-
-    @property
-    def desc(self):
-        if self._desc is None:
-            self._desc = self._api.album_desc(self.identifier)
-        return self._desc
-
-    @desc.setter
-    def desc(self, value):
-        self._desc = value
-
-
 class NArtistModel(ArtistModel, NBaseModel):
 
     class Meta:
@@ -170,7 +149,7 @@ class NArtistModel(ArtistModel, NBaseModel):
                     # the songs field will always be an empty list,
                     # we set it to None
                     album['songs'] = None
-                    yield _deserialize(album, NeteaseAlbumSchema)
+                    yield _deserialize(album, V2AlbumSchema)
                     cur += 1
                 if data['more']:
                     data = self._api.artist_albums(self.identifier, offset=cur)
@@ -325,15 +304,20 @@ class NUserModel(UserModel, NBaseModel):
 
     @property
     def fav_albums(self):
-        return create_g(self._api.user_favorite_albums, NeteaseAlbumSchema)
+        return create_g(self._api.user_favorite_albums, V2AlbumSchema)
 
     @fav_albums.setter
     def fav_albums(self, _): pass
 
     @property
     def cloud_songs(self):
-        return create_cloud_songs_g(self._api.cloud_songs, self._api.cloud_songs_detail,
-                                    V2SongSchemaForV3, NCloudSchema, data_key='simpleSong')
+        return create_cloud_songs_g(
+            self._api.cloud_songs,
+            self._api.cloud_songs_detail,
+            V2SongSchemaForV3,
+            NCloudSchema,
+            data_key='simpleSong'
+        )
 
     @cloud_songs.setter
     def cloud_songs(self, _): pass
@@ -359,7 +343,7 @@ class NUserModel(UserModel, NBaseModel):
 from .schemas import (  # noqa
     V2SongSchema,
     V2MvSchema,
-    NeteaseAlbumSchema,
+    V2AlbumSchema,
     NeteaseArtistSchema,
     NeteasePlaylistSchema,
     NeteaseUserSchema,

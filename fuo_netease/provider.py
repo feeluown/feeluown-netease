@@ -2,7 +2,7 @@ import logging
 
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
     CommentModel, BriefCommentModel, BriefUserModel, UserModel, \
-    NoUserLoggedIn, LyricModel
+    NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
 from feeluown.models import ModelType, SearchType
 from .api import API
@@ -20,7 +20,8 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
                              PF.get | PF.hot_comments | PF.web_url |
                              PF.lyric | PF.mv),
-            ModelType.video: (PF.get | PF.multi_quality),
+            ModelType.album: (PF.model_v2 | PF.get),
+            ModelType.video: (PF.model_v2 | PF.get | PF.multi_quality),
             ModelType.none: PF.current_user,
         }
 
@@ -231,6 +232,15 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         q_media_mapping = self._model_cache_get_or_fetch(video, 'q_media_mapping')
         return list(q_media_mapping.keys())
 
+    def album_get(self, identifier):
+        album_data = self.api.album_infos(identifier)
+        if album_data is None:
+            raise ModelNotFound
+        description = self.api.album_desc(identifier)
+        album_data['description'] = description
+        album = _deserialize(album_data, V2AlbumSchema)
+        return album
+
     def search(self, keyword, type_, **kwargs):
         type_ = SearchType.parse(type_)
         type_type_map = {
@@ -253,4 +263,5 @@ from .schemas import (  # noqa
     V2SongSchema,
     V2MvSchema,
     NeteaseSearchSchema,
+    V2AlbumSchema,
 )
