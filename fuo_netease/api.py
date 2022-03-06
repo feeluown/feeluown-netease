@@ -580,7 +580,7 @@ class API(object):
 
         '''3. 提交资源'''
         songId = cresult['songId']
-        logger.debug(f'''[!] Assuming upload has finished,preparing to submit    
+        logger.debug(f'''[!] Assuming upload has finished,preparing to submit
         ID  :   {songId}
         MD5 :   {md5}
         NAME:   {fname}''')

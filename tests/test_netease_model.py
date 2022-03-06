@@ -23,3 +23,7 @@ with open('data/fixtures/playlist.json') as f:
 
 with open('data/fixtures/search.json') as f:
     data_search = json.load(f)
+
+
+def test_():
+    pass
