@@ -17,7 +17,7 @@ async def render(req, **kwargs):
     view.daily_rec_btn.clicked.connect(
         lambda: app.browser.goto(page='/providers/netease/daily_recommendation'))
     model = PlaylistListModel(wrap(playlists),
-                              fetch_cover_wrapper(app.img_mgr),
+                              fetch_cover_wrapper(app),
                               {p.identifier: p.name for p in app.library.list()})
     filter_model = PlaylistFilterProxyModel()
     filter_model.setSourceModel(model)

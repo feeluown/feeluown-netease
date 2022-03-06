@@ -304,7 +304,7 @@ class NUserModel(UserModel, NBaseModel):
 
     @property
     def fav_albums(self):
-        return create_g(self._api.user_favorite_albums, V2AlbumSchema)
+        return create_g(self._api.user_favorite_albums, V2BriefAlbumSchema)
 
     @fav_albums.setter
     def fav_albums(self, _): pass
@@ -343,6 +343,7 @@ class NUserModel(UserModel, NBaseModel):
 from .schemas import (  # noqa
     V2SongSchema,
     V2MvSchema,
+    V2BriefAlbumSchema,
     V2AlbumSchema,
     NeteaseArtistSchema,
     NeteasePlaylistSchema,
