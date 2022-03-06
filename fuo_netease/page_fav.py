@@ -37,7 +37,8 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
         if self.tab_id == Tab.songs:
             self.show_songs(await aio.run_fn(lambda: self._user.cloud_songs))
             dir_upload_btn = TextButton('上传目录', self.toolbar)
-            dir_upload_btn.clicked.connect(lambda: aio.run_afn(self._upload_cloud_songs_bydir))
+            dir_upload_btn.clicked.connect(
+                lambda: aio.run_afn(self._upload_cloud_songs_bydir))
             self.toolbar.add_tmp_button(dir_upload_btn)
             upload_btn = TextButton('上传音乐', self.toolbar)
             upload_btn.clicked.connect(lambda: aio.run_afn(self._upload_cloud_songs))
@@ -63,8 +64,10 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
         import os
         paths = []
         for dir, _, files in os.walk(root):
-            paths.extend([os.path.join(dir, f) for f in sorted(files)
-                          if f.rsplit('.', 1)[-1] in ['mp3', 'm4a', 'wma', 'flac', 'ogg']])
+            exts = ['mp3', 'm4a', 'wma', 'flac', 'ogg']
+            paths.extend([os.path.join(dir, f)
+                          for f in sorted(files)
+                          if f.rsplit('.', 1)[-1] in exts])
 
         for idx, path in enumerate(paths):
             ok = await aio.run_fn(self._user.meta.provider.upload_song, path)
