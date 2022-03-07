@@ -149,7 +149,7 @@ class NArtistModel(ArtistModel, NBaseModel):
                     # the songs field will always be an empty list,
                     # we set it to None
                     album['songs'] = None
-                    yield _deserialize(album, V2AlbumSchema)
+                    yield _deserialize(album, V2BriefAlbumSchema)
                     cur += 1
                 if data['more']:
                     data = self._api.artist_albums(self.identifier, offset=cur)
