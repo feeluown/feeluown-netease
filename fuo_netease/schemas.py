@@ -14,10 +14,9 @@ from marshmallow import Schema, post_load, fields, EXCLUDE
 
 from feeluown.library import (
     SongModel, BriefAlbumModel, BriefArtistModel, ModelState, BriefSongModel,
-    VideoModel, AlbumModel,
+    VideoModel, AlbumModel, ArtistModel
 )
 from feeluown.media import Quality, MediaType, Media
-from feeluown.models import ModelExistence
 
 logger = logging.getLogger(__name__)
 
@@ -154,12 +153,30 @@ class V2AlbumSchema(Schema):
     artists = fields.List(fields.Nested('V2BriefArtistSchema'))
     # 收藏和搜索接口返回的 album 数据中的 songs 为 None
     songs = fields.List(fields.Nested('V2SongSchema'), allow_none=True)
+
     # Description is fetched seperatelly by `album_desc` API.
     description = fields.Str(missing='')
 
     @post_load
     def create_v2_model(self, data, **kwargs):
         return AlbumModel(**data)
+
+
+class V2ArtistSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    name = fields.Str()
+    pic_url = fields.Str(data_key='picUrl', allow_none=True)
+    hot_songs = fields.List(fields.Nested('V2SongSchema'), data_key='songs')
+
+    # TODO:
+    aliases = fields.List(fields.Str(), missing=[])
+
+    # Description is fetched seperatelly by `artist_desc` API.
+    description = fields.Str(missing='')
+
+    @post_load
+    def create_v2_model(self, data, **kwargs):
+        return ArtistModel(**data)
 
 
 class NAlbumSchemaV3(Schema):
@@ -175,32 +192,6 @@ class NAlbumSchemaV3(Schema):
             album.state = ModelState.not_exists
             album.name = ''
         return album
-
-
-class NeteaseArtistSchema(Schema):
-    identifier = fields.Int(required=True, data_key='id')
-    name = fields.Str()
-    cover = fields.Str(data_key='picUrl', allow_none=True)
-    songs = fields.List(fields.Nested('V2SongSchema'))
-
-    @post_load
-    def create_model(self, data, **kwargs):
-        return NArtistModel(**data)
-
-
-class NArtistSchemaV3(Schema):
-    # 如果 artist 无效，id 则为 0
-    # 只有当 artist 无效时，name 才可能为 None
-    identifier = fields.Int(required=True, data_key='id')
-    name = fields.Str(required=True, allow_none=True)
-
-    @post_load
-    def create_model(self, data, **kwargs):
-        artist = NArtistModel(**data)
-        if artist.identifier == 0:
-            artist.exists = ModelExistence.no
-            artist.name = ''
-        return artist
 
 
 class NeteaseDjradioSchema(Schema):
@@ -297,8 +288,8 @@ class NeteaseUserSchema(Schema):
 class NeteaseSearchSchema(Schema):
     """搜索结果 Schema"""
     songs = fields.List(fields.Nested(V2SongSchema))
-    albums = fields.List(fields.Nested(V2AlbumSchema))
-    artists = fields.List(fields.Nested(NeteaseArtistSchema))
+    albums = fields.List(fields.Nested(V2BriefAlbumSchema))
+    artists = fields.List(fields.Nested(V2BriefArtistSchema))
     playlists = fields.List(fields.Nested(NeteasePlaylistSchema))
 
     @post_load
@@ -307,7 +298,6 @@ class NeteaseSearchSchema(Schema):
 
 
 from .models import (  # noqa
-    NArtistModel,
     NPlaylistModel,
     NUserModel,
     NSearchModel,

@@ -5,6 +5,7 @@ from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, 
     NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
 from feeluown.models import ModelType, SearchType
+from feeluown.utils.reader import create_reader, SequentialReader
 from .api import API
 
 
@@ -21,6 +22,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                              PF.get | PF.hot_comments | PF.web_url |
                              PF.lyric | PF.mv),
             ModelType.album: (PF.model_v2 | PF.get),
+            ModelType.artist: (PF.model_v2 | PF.get | PF.songs_rd | PF.albums_rd),
             ModelType.video: (PF.model_v2 | PF.get | PF.multi_quality),
             ModelType.none: PF.current_user,
         }
@@ -241,6 +243,59 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         album = _deserialize(album_data, V2AlbumSchema)
         return album
 
+    def artist_get(self, identifier):
+        artist_data = self.api.artist_infos(identifier)
+        artist = artist_data['artist']
+        artist['songs'] = artist_data['hotSongs'] or []
+        description = self.api.artist_desc(identifier)
+        artist['description'] = description
+        artist['aliases'] = []
+        model = _deserialize(artist, V2ArtistSchema)
+        return model
+
+    # TODO: artist create albums g
+    # TODO: artist create songs g
+    def artist_create_songs_rd(self, artist):
+        data = self.api.artist_songs(artist.identifier, limit=0)
+        count = int(data['total'])
+
+        def g():
+            offset = 0
+            per = 50
+            while offset < count:
+                data = self.api.artist_songs(artist.identifier, offset, per)
+                for song_data in data['songs']:
+                    yield _deserialize(song_data, V2SongSchema)
+                # In reality, len(data['songs']) may smaller than per,
+                # which is a bug of netease server side, so we set
+                # offset to `offset + per` here.
+                offset += per
+                per = 100
+
+        return SequentialReader(g(), count)
+
+    def artist_create_albums_rd(self, artist):
+
+        def g():
+            data = self.api.artist_albums(artist.identifier)
+            if data['code'] != 200:
+                yield from ()
+            else:
+                cur = 1
+                while True:
+                    for album in data['hotAlbums']:
+                        # the songs field will always be an empty list,
+                        # we set it to None
+                        album['songs'] = None
+                        yield _deserialize(album, V2BriefAlbumSchema)
+                        cur += 1
+                    if data['more']:
+                        data = self.api.artist_albums(artist.identifier, offset=cur)
+                    else:
+                        break
+
+        return create_reader(g())
+
     def search(self, keyword, type_, **kwargs):
         type_ = SearchType.parse(type_)
         type_type_map = {
@@ -264,4 +319,6 @@ from .schemas import (  # noqa
     V2MvSchema,
     NeteaseSearchSchema,
     V2AlbumSchema,
+    V2ArtistSchema,
+    V2BriefAlbumSchema,
 )

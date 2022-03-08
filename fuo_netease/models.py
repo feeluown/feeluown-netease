@@ -6,7 +6,6 @@ from feeluown.models import (
     cached_field,
     BaseModel,
     PlaylistModel,
-    ArtistModel,
     UserModel,
     SearchModel,
 )
@@ -103,68 +102,6 @@ class NBaseModel(BaseModel):
     class Meta:
         allow_get = True
         provider = provider
-
-
-class NArtistModel(ArtistModel, NBaseModel):
-
-    class Meta:
-        allow_create_songs_g = True
-        allow_create_albums_g = True
-
-    @classmethod
-    def get(cls, identifier):
-        artist_data = cls._api.artist_infos(identifier)
-        artist = artist_data['artist']
-        artist['songs'] = artist_data['hotSongs'] or []
-        artist = _deserialize(artist, NeteaseArtistSchema)
-        return artist
-
-    def create_songs_g(self):
-        data = self._api.artist_songs(self.identifier, limit=0)
-        count = int(data['total'])
-
-        def g():
-            offset = 0
-            per = 50
-            while offset < count:
-                data = self._api.artist_songs(self.identifier, offset, per)
-                for song_data in data['songs']:
-                    yield _deserialize(song_data, V2SongSchema)
-                # In reality, len(data['songs']) may smaller than per,
-                # which is a bug of netease server side, so we set
-                # offset to `offset + per` here.
-                offset += per
-                per = 100
-
-        return SequentialReader(g(), count)
-
-    def create_albums_g(self):
-        data = self._api.artist_albums(self.identifier)
-        if data['code'] != 200:
-            yield from ()
-        else:
-            cur = 1
-            while True:
-                for album in data['hotAlbums']:
-                    # the songs field will always be an empty list,
-                    # we set it to None
-                    album['songs'] = None
-                    yield _deserialize(album, V2BriefAlbumSchema)
-                    cur += 1
-                if data['more']:
-                    data = self._api.artist_albums(self.identifier, offset=cur)
-                else:
-                    break
-
-    @property
-    def desc(self):
-        if self._desc is None:
-            self._desc = self._api.artist_desc(self.identifier)
-        return self._desc
-
-    @desc.setter
-    def desc(self, value):
-        self._desc = value
 
 
 class NRadioModel(PlaylistModel, NBaseModel):
@@ -297,7 +234,7 @@ class NUserModel(UserModel, NBaseModel):
 
     @property
     def fav_artists(self):
-        return create_g(self._api.user_favorite_artists, NeteaseArtistSchema)
+        return create_g(self._api.user_favorite_artists, V2BriefArtistSchema)
 
     @fav_artists.setter
     def fav_artists(self, _): pass
@@ -342,10 +279,8 @@ class NUserModel(UserModel, NBaseModel):
 # import loop
 from .schemas import (  # noqa
     V2SongSchema,
-    V2MvSchema,
     V2BriefAlbumSchema,
-    V2AlbumSchema,
-    NeteaseArtistSchema,
+    V2BriefArtistSchema,
     NeteasePlaylistSchema,
     NeteaseUserSchema,
     V2SongSchemaForV3, NDjradioSchema, NeteaseDjradioSchema, NCloudSchema,
