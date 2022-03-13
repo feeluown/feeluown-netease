@@ -24,6 +24,8 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             ModelType.album: (PF.model_v2 | PF.get),
             ModelType.artist: (PF.model_v2 | PF.get | PF.songs_rd | PF.albums_rd),
             ModelType.video: (PF.model_v2 | PF.get | PF.multi_quality),
+            ModelType.playlist: (PF.model_v2 | PF.get |
+                                 PF.songs_rd | PF.add_song | PF.remove_song),
             ModelType.none: PF.current_user,
         }
 
@@ -266,9 +268,9 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                 data = self.api.artist_songs(artist.identifier, offset, per)
                 for song_data in data['songs']:
                     yield _deserialize(song_data, V2SongSchema)
-                # In reality, len(data['songs']) may smaller than per,
-                # which is a bug of netease server side, so we set
-                # offset to `offset + per` here.
+                    # In reality, len(data['songs']) may smaller than per,
+                    # which is a bug of netease server side, so we set
+                    # offset to `offset + per` here.
                 offset += per
                 per = 100
 
@@ -296,6 +298,49 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 
         return create_reader(g())
 
+    def playlist_get(self, identifier):
+        data = self.api.playlist_detail_v3(identifier, limit=0)
+        playlist = _deserialize(data, V2PlaylistSchema)
+        return playlist
+
+    def playlist_create_songs_rd(self, playlist):
+        data = self.api.playlist_detail_v3(playlist.identifier, limit=0)
+        track_ids = data['trackIds']  # [{'id': 1, 'v': 1}, ...]
+        count = len(track_ids)
+
+        def g():
+            offset = 0
+            per = 50  # speed up first request
+            while offset < count:
+                end = min(offset + per, count)
+                if end <= offset:
+                    break
+                ids = [track_id['id'] for track_id in track_ids[offset: end]]
+                tracks_data = self.api.songs_detail_v3(ids)
+                for track_data in tracks_data:
+                    yield _deserialize(track_data, V2SongSchemaForV3)
+                    offset += per
+                    per = 800
+
+        return SequentialReader(g(), count)
+
+    def playlist_remove_song(self, playlist, song):
+        song_id = song.identifier
+        rv = self.api.op_music_to_playlist(song_id, playlist.identifier, 'del')
+        if rv != 1:
+            return False
+        return True
+
+    def playlist_add_song(self, playlist, song):
+        song_id = song.identifier
+        rv = self.api.op_music_to_playlist(song_id, playlist.identifier, 'add')
+        if rv == 1:
+            song = provider.song_get(song_id)
+            return True
+        elif rv == -1:
+            return True
+        return False
+
     def search(self, keyword, type_, **kwargs):
         type_ = SearchType.parse(type_)
         type_type_map = {
@@ -316,9 +361,11 @@ provider = NeteaseProvider()
 from .models import _deserialize  # noqa
 from .schemas import (  # noqa
     V2SongSchema,
+    V2SongSchemaForV3,
     V2MvSchema,
-    NeteaseSearchSchema,
     V2AlbumSchema,
     V2ArtistSchema,
     V2BriefAlbumSchema,
+    V2PlaylistSchema,
+    NeteaseSearchSchema,
 )

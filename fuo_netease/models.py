@@ -131,59 +131,6 @@ class NRadioModel(PlaylistModel, NBaseModel):
         return radio
 
 
-class NPlaylistModel(PlaylistModel, NBaseModel):
-    class Meta:
-        fields = ('uid',)
-        allow_create_songs_g = True
-
-    def create_songs_g(self):
-        data = self._api.playlist_detail_v3(self.identifier, limit=0)
-        track_ids = data['trackIds']  # [{'id': 1, 'v': 1}, ...]
-        count = len(track_ids)
-
-        def g():
-            offset = 0
-            per = 50  # speed up first request
-            while offset < count:
-                end = min(offset + per, count)
-                if end <= offset:
-                    break
-                ids = [track_id['id'] for track_id in track_ids[offset: end]]
-                tracks_data = self._api.songs_detail_v3(ids)
-                for track_data in tracks_data:
-                    yield _deserialize(track_data, V2SongSchemaForV3)
-                offset += per
-                per = 800
-
-        return SequentialReader(g(), count)
-
-    @classmethod
-    def get(cls, identifier):
-        data = cls._api.playlist_detail_v3(identifier, limit=0)
-        playlist = _deserialize(data, NeteasePlaylistSchema)
-        return playlist
-
-    def add(self, song_id, allow_exist=True):
-        rv = self._api.op_music_to_playlist(song_id, self.identifier, 'add')
-        if rv == 1:
-            song = provider.song_get(song_id)
-            self.songs.append(song)
-            return True
-        elif rv == -1:
-            return True
-        return False
-
-    def remove(self, song_id, allow_not_exist=True):
-        rv = self._api.op_music_to_playlist(song_id, self.identifier, 'del')
-        if rv != 1:
-            return False
-        # XXX: make it O(1) if you want
-        for song in self.songs:
-            if song.identifier == song_id:
-                self.songs.remove(song)
-        return True
-
-
 class NSearchModel(SearchModel, NBaseModel):
     pass
 
@@ -220,7 +167,7 @@ class NUserModel(UserModel, NBaseModel):
             # FIXME: GUI模式下无法显示歌单描述
             playlist_data['coverImgUrl'] = playlist_data['picUrl']
             playlist_data['description'] = None
-            playlist = _deserialize(playlist_data, NeteasePlaylistSchema)
+            playlist = _deserialize(playlist_data, V2PlaylistSchema)
             rec_playlists.append(playlist)
         return rec_playlists
 
@@ -281,7 +228,8 @@ from .schemas import (  # noqa
     V2SongSchema,
     V2BriefAlbumSchema,
     V2BriefArtistSchema,
-    NeteasePlaylistSchema,
+    V2PlaylistSchema,
     NeteaseUserSchema,
-    V2SongSchemaForV3, NDjradioSchema, NeteaseDjradioSchema, NCloudSchema,
+    V2SongSchemaForV3,
+    NDjradioSchema, NeteaseDjradioSchema, NCloudSchema,
 )  # noqa

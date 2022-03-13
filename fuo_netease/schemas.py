@@ -14,7 +14,7 @@ from marshmallow import Schema, post_load, fields, EXCLUDE
 
 from feeluown.library import (
     SongModel, BriefAlbumModel, BriefArtistModel, ModelState, BriefSongModel,
-    VideoModel, AlbumModel, ArtistModel
+    VideoModel, AlbumModel, ArtistModel, PlaylistModel, BriefUserModel,
 )
 from feeluown.media import Quality, MediaType, Media
 
@@ -255,29 +255,35 @@ class NCloudSchema(Schema):
                               **data)
 
 
-class NeteasePlaylistSchema(Schema):
-    identifier = fields.Int(required=True, data_key='id')
-    uid = fields.Int(required=True, data_key='userId')
-    name = fields.Str(required=True)
-    desc = fields.Str(required=True, allow_none=True, data_key='description')
-    cover = fields.Url(required=True, data_key='coverImgUrl')
-    # songs field maybe null, though it can't be null in model
-    songs = fields.List(fields.Nested(V2SongSchema),
-                        data_key='tracks',
-                        allow_none=True)
+class V2PlaylistCreatorScehma(Schema):
+    identifier = fields.Int(required=True, data_key='userId')
+    name = fields.Str(required=True, data_key='nickname')
 
     @post_load
-    def create_model(self, data, **kwargs):
-        if data.get('desc') is None:
-            data['desc'] = ''
-        return NPlaylistModel(**data)
+    def create_v2_model(self, data, **kwargs):
+        data['identifier'] = str(data['identifier'])
+        return BriefUserModel(**data)
+
+
+class V2PlaylistSchema(Schema):
+    identifier = fields.Int(required=True, data_key='id')
+    creator = fields.Nested(V2PlaylistCreatorScehma, missing=None)
+    name = fields.Str(required=True)
+    description = fields.Str(required=True, allow_none=True, data_key='description')
+    cover = fields.Url(required=True, data_key='coverImgUrl')
+
+    @post_load
+    def create_v2_model(self, data, **kwargs):
+        if data.get('description') is None:
+            data['description'] = ''
+        return PlaylistModel(**data)
 
 
 class NeteaseUserSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     name = fields.Str(required=True)
-    playlists = fields.List(fields.Nested(NeteasePlaylistSchema))
-    fav_playlists = fields.List(fields.Nested(NeteasePlaylistSchema))
+    playlists = fields.List(fields.Nested(V2PlaylistSchema))
+    fav_playlists = fields.List(fields.Nested(V2PlaylistSchema))
     cookies = fields.Dict()
 
     @post_load
@@ -290,7 +296,7 @@ class NeteaseSearchSchema(Schema):
     songs = fields.List(fields.Nested(V2SongSchema))
     albums = fields.List(fields.Nested(V2BriefAlbumSchema))
     artists = fields.List(fields.Nested(V2BriefArtistSchema))
-    playlists = fields.List(fields.Nested(NeteasePlaylistSchema))
+    playlists = fields.List(fields.Nested(V2PlaylistSchema))
 
     @post_load
     def create_model(self, data, **kwargs):
@@ -298,7 +304,6 @@ class NeteaseSearchSchema(Schema):
 
 
 from .models import (  # noqa
-    NPlaylistModel,
     NUserModel,
     NSearchModel,
     NRadioModel,

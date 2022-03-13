@@ -401,12 +401,13 @@ class API(object):
             'op': op   # opation
         }
         data = self.request('POST', url_add, data_add)
+        print(data)
         code = data.get('code')
 
         # 从歌单中成功的移除歌曲时，code 是 200
         # 当从歌单中移除一首不存在的歌曲时，code 也是 200
-        # 当向歌单添加歌曲时，如果歌曲已经在列表当中，
-        # 返回 code 为 502
+        # 当向歌单添加歌曲时，如果歌曲已经在列表当中，返回 code 为 502
+        # code 为 521 时，可能是因为：绑定手机号后才可操作哦
         if code == 200:
             return 1
         elif code == 502:
