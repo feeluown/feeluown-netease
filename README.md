@@ -12,6 +12,11 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.9 (2022-03-30)
+
+- 适配 FeelUOwn 最新版以提升稳定性
+- 更好的支持云盘歌曲，比如上传等
+
 ### 0.8 (2021-11-06)
 - 新增个人电台功能
 - 移除老的 SongModel/MvModel 等，适配 library v2
