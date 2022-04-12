@@ -38,10 +38,7 @@ setup(
 
             # unittest
             'pytest>=5.4.0',
-            'pytest-runner',
             'pytest-cov',
-            'pytest-asyncio',
-            'pytest-mock',
         ],
     },
     entry_points={
