@@ -14,3 +14,8 @@ def _read_json_fixture(path):
 @pytest.fixture
 def playlist_detail_v3__2829883282():
     return _read_json_fixture('playlist_detail_v3__2829883282.json')
+
+
+@pytest.fixture
+def songs_detail_v3__191232():
+    return _read_json_fixture('songs_detail_v3.json')

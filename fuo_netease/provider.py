@@ -310,17 +310,26 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 
         def g():
             offset = 0
-            per = 50  # speed up first request
+            # 第一次请求应该尽可能快一点，所以这里只获取少量的歌曲。
+            # 综合页面展示以及请求速度，拍脑袋将值设置为 50。
+            per = 50
             while offset < count:
                 end = min(offset + per, count)
                 if end <= offset:
                     break
                 ids = [track_id['id'] for track_id in track_ids[offset: end]]
+                # NOTE(cosven): 记忆中这里有个坑，传入的 id 个数和返回的歌曲个数
+                # 不一定相等。比如在一个叫做“万首歌单”的歌单里面，有的歌曲是
+                # 获取不到信息的。这也是这里为什么用 SequentialReader 而不是
+                # RandomSequentialReader 的原因。
                 tracks_data = self.api.songs_detail_v3(ids)
                 for track_data in tracks_data:
                     yield _deserialize(track_data, V2SongSchemaForV3)
-                    offset += per
-                    per = 800
+                offset += per
+                # 这里设置为 800 主要是为 readall 的场景考虑的。假设这个值设置很小，
+                # 那当这个歌单歌曲数量比较多的时候（比如一万首），需要很多个请求
+                # 才能获取到全部的歌曲。
+                per = 800
 
         return SequentialReader(g(), count)
 
