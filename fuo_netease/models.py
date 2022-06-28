@@ -144,8 +144,8 @@ class NUserModel(UserModel, NBaseModel):
     @classmethod
     def get(cls, identifier):
         user = {'id': identifier}
-        user_brief = cls._api.user_brief(identifier)
-        user.update(user_brief)
+        user_profile = cls._api.user_profile(identifier)
+        user['name'] = user_profile['nickname']
         playlists = cls._api.user_playlists(identifier)
 
         user['playlists'] = []

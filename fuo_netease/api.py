@@ -311,19 +311,6 @@ class API(object):
             return artdesc.prettify()
         return ''
 
-    def user_brief(self, user_id):
-        # TODO: return more info if needed
-        url = site_uri + '/user/home'
-        data = {'id': user_id}
-        res = self.http.get(url, params=data, headers=self.headers)
-        soup = BeautifulSoup(res.content, 'html.parser')
-        title_parts = soup.title.text.split(' - ')
-        if len(title_parts) > 1:
-            name = title_parts[0]
-            return {'name': name}
-        else:
-            return None
-
     # song id --> song url ( details )
     def song_detail(self, music_id):
         action = uri + '/song/detail/?id=' + str(music_id) + '&ids=[' +\
