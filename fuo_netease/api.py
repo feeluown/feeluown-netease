@@ -464,7 +464,6 @@ class API(object):
         url = uri_v3 + '/discovery/recommend/songs'
         payload = self.encrypt_request({})
         res_data = self.request('POST', url, payload)
-        print(res_data)
         if res_data['code'] == 200:
             return res_data['data']['dailySongs']
         raise CodeShouldBe200(res_data)

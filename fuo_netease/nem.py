@@ -33,10 +33,12 @@ class Nem(QObject):
         from .page_explore import render as explore_render # noqa
         from .page_fav import render as fav_render  # noqa
         from .page_daily_recommendation import render as dr_render
+        # from .home import render as home_render
 
         self._app.browser.route('/providers/netease/explore')(explore_render)
         self._app.browser.route('/providers/netease/fav')(fav_render)
         self._app.browser.route('/providers/netease/daily_recommendation')(dr_render)
+        # self._app.browser.route('/providers/netease/home')(home_render)
 
     def ready_to_login(self):
         if self._user is not None:
