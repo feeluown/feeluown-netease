@@ -461,11 +461,13 @@ class API(object):
         raise CodeShouldBe200(data)
 
     def get_recommend_songs(self):
-        url = uri + '/discovery/recommend/songs'
-        data = self.request('GET', url)
-        if data['code'] == 200:
-            return data['recommend']
-        return None
+        url = uri_v3 + '/discovery/recommend/songs'
+        payload = self.encrypt_request({})
+        res_data = self.request('POST', url, payload)
+        print(res_data)
+        if res_data['code'] == 200:
+            return res_data['data']['dailySongs']
+        raise CodeShouldBe200(res_data)
 
     def get_recommend_playlists(self):
         url = uri + '/discovery/recommend/resource'

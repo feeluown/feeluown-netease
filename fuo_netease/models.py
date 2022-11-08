@@ -211,7 +211,7 @@ class NUserModel(UserModel, NBaseModel):
     @cached_field(ttl=60)
     def rec_songs(self):
         songs_data = self._api.get_recommend_songs()
-        return [_deserialize(song_data, V2SongSchema)
+        return [_deserialize(song_data, V2SongSchemaForV3)
                 for song_data in songs_data]
 
     def get_radio(self):
