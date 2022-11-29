@@ -42,9 +42,9 @@ async def render(req, **kwargs):
         lambda model: app.browser.goto(model=model))
 
 
-class ScrollArea(QScrollArea):
+class ScrollArea(QScrollArea, BgTransparentMixin):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super().__init__()
         self.setWidgetResizable(True)
         self.setFrameShape(QFrame.NoFrame)
         if sys.platform.lower() != 'darwin':
@@ -57,7 +57,7 @@ class HeaderLabel(QLabel):
         self.setTextFormat(Qt.RichText)
 
 
-class HomeView(QWidget):
+class HomeView(QFrame, BgTransparentMixin):
     def __init__(self):
         super().__init__(parent=None)
 
