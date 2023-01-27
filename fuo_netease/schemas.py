@@ -9,6 +9,7 @@ V2{X}Schema 返回的 model 都是 v2 版本的 Model 实例，也就是从 feel
 """
 
 import logging
+from datetime import datetime
 
 from marshmallow import Schema, post_load, fields, EXCLUDE
 
@@ -156,9 +157,15 @@ class V2AlbumSchema(Schema):
 
     # Description is fetched seperatelly by `album_desc` API.
     description = fields.Str(missing='')
+    released = fields.Int(data_key='publishTime', missing=0)
 
     @post_load
     def create_v2_model(self, data, **kwargs):
+        released = data['released']
+        if released:
+            released_date = datetime.fromtimestamp(released / 1000)
+            released_str = released_date.strftime('%Y-%m-%d')
+            data['released'] = released_str
         return AlbumModel(**data)
 
 
