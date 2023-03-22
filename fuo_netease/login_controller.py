@@ -58,6 +58,8 @@ class LoginController(object):
             return {'code': 502, 'message': '密码错误'}
         elif data['code'] == 509:
             return {'code': 509, 'message': '请休息几分钟再尝试'}
+        else:
+            return {'code': data['code'], 'message': data['message']}
 
     @classmethod
     def check_captcha(cls, captcha_id, text):
