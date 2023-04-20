@@ -73,12 +73,11 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 
     def song_get_lyric(self, song):
         data = self.api.get_lyric_by_songid(song.identifier)
-        lrc = data.get('lrc', {})
-        lyric = lrc.get('lyric', '')
         return LyricModel(
             source=SOURCE,
             identifier=self.identifier,
-            content=lyric,
+            content=data.get('lrc', {}).get('lyric', ''),
+            trans_content=data.get('tlyric', {}).get('lyric', ''),
         )
 
     def song_get_mv(self, song):
