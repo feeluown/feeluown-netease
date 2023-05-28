@@ -154,6 +154,7 @@ class V2AlbumSchema(Schema):
     artists = fields.List(fields.Nested('V2BriefArtistSchema'))
     # 收藏和搜索接口返回的 album 数据中的 songs 为 None
     songs = fields.List(fields.Nested('V2SongSchema'), allow_none=True)
+    song_count = fields.Int(data_key='size')
 
     # Description is fetched seperatelly by `album_desc` API.
     description = fields.Str(missing='')
@@ -166,6 +167,7 @@ class V2AlbumSchema(Schema):
             released_date = datetime.fromtimestamp(released / 1000)
             released_str = released_date.strftime('%Y-%m-%d')
             data['released'] = released_str
+        data['songs'] = data['songs'] or []
         return AlbumModel(**data)
 
 
@@ -301,7 +303,7 @@ class NeteaseUserSchema(Schema):
 class NeteaseSearchSchema(Schema):
     """搜索结果 Schema"""
     songs = fields.List(fields.Nested(V2SongSchema))
-    albums = fields.List(fields.Nested(V2BriefAlbumSchema))
+    albums = fields.List(fields.Nested(V2AlbumSchema))
     artists = fields.List(fields.Nested(V2BriefArtistSchema))
     playlists = fields.List(fields.Nested(V2PlaylistSchema))
 

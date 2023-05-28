@@ -17,6 +17,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
     class meta:
         identifier = SOURCE
         name = '网易云音乐'
+        # TODO: remove
         flags = {
             ModelType.song: (PF.model_v2 | PF.similar | PF.multi_quality |
                              PF.get | PF.hot_comments | PF.web_url |
@@ -244,6 +245,10 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         album = _deserialize(album_data, V2AlbumSchema)
         return album
 
+    def album_create_songs_rd(self, album):
+        album_with_songs = self.album_get(album.identifier)
+        return create_reader(album_with_songs.songs)
+
     def artist_get(self, identifier):
         artist_data = self.api.artist_infos(identifier)
         artist = artist_data['artist']
@@ -288,7 +293,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                         # the songs field will always be an empty list,
                         # we set it to None
                         album['songs'] = None
-                        yield _deserialize(album, V2BriefAlbumSchema)
+                        yield _deserialize(album, V2AlbumSchema)
                         cur += 1
                     if data['more']:
                         data = self.api.artist_albums(artist.identifier, offset=cur)
