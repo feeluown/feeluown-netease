@@ -4,7 +4,7 @@ from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, 
     CommentModel, BriefCommentModel, BriefUserModel, UserModel, \
     NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
-from feeluown.models import ModelType, SearchType
+from feeluown.models import ModelType, SearchType, cached_field
 from feeluown.utils.reader import create_reader, SequentialReader
 from .api import API
 
@@ -43,9 +43,10 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return '网易云音乐'
 
     def auth(self, user):
-        assert user.cookies is not None
+        cookies, exists = user.cache_get('cookies')
+        assert exists and cookies is not None
         self._user = user
-        self.api.load_cookies(user.cookies)
+        self.api.load_cookies(cookies)
 
     def has_current_user(self):
         return self._user is not None
@@ -66,6 +67,62 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 
     def current_user_fav_djradios(self):
         return create_g(self.api.subscribed_djradio, NeteaseDjradioSchema, 'djRadios')
+
+    def current_user_fav_artists(self):
+        return create_g(self.api.user_favorite_artists, V2BriefArtistSchema)
+
+    def current_user_fav_albums(self):
+        return create_g(self.api.user_favorite_albums, V2BriefAlbumSchema)
+
+    def current_user_cloud_songs(self):
+        return create_cloud_songs_g(
+            self.api.cloud_songs,
+            self.api.cloud_songs_detail,
+            V2SongSchemaForV3,
+            NCloudSchema,
+            data_key='simpleSong'
+        )
+
+    def current_user_playlists(self):
+        user_id = str(self._user.identifier)
+        data_playlists = self.api.user_playlists(user_id)
+        playlists = []
+        fav_playlists = []
+        for pl in data_playlists:
+            if str(pl['userId']) == user_id:
+                playlists.append(pl)
+            else:
+                fav_playlists.append(pl)
+        return [_deserialize(e, V2PlaylistSchema) for e in playlists], \
+            [_deserialize(e, V2PlaylistSchema) for e in fav_playlists]
+
+    def current_user_get_radio_songs(self):
+        songs_data = self.api.get_radio_music()
+        if songs_data is None:
+            logger.error('data should not be None')
+            return None
+        return [_deserialize(song_data, V2SongSchema)
+                for song_data in songs_data]
+
+    @cached_field()
+    def current_user_rec_playlists_p(self):
+        playlists_data = self.api.get_recommend_playlists()
+        rec_playlists = []
+        for playlist_data in playlists_data:
+            # FIXME: GUI模式下无法显示歌单描述
+            playlist_data['coverImgUrl'] = playlist_data['picUrl']
+            playlist_data['description'] = None
+            playlist = _deserialize(playlist_data, V2PlaylistSchema)
+            rec_playlists.append(playlist)
+        return rec_playlists
+
+    # 根据过去经验，每日推荐歌曲在每天早上 6:00 刷新，
+    # ttl 设置为 60s 是为了能够比较即时的获取今天推荐。
+    @cached_field(ttl=60)
+    def current_user_rec_songs_p(self):
+        songs_data = self.api.get_recommend_songs()
+        return [_deserialize(song_data, V2SongSchemaForV3)
+                for song_data in songs_data]
 
     def song_get(self, identifier):
         data = self.api.song_detail(int(identifier))
@@ -392,17 +449,19 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 provider = NeteaseProvider()
 
 
-from .models import _deserialize, create_g  # noqa
+from .models import _deserialize, create_g, create_cloud_songs_g  # noqa
 from .schemas import (  # noqa
     V2SongSchema,
     V2SongSchemaForV3,
     V2MvSchema,
     V2AlbumSchema,
     V2ArtistSchema,
+    V2BriefArtistSchema,
     V2BriefAlbumSchema,
     V2PlaylistSchema,
     NeteaseSearchSchema,
     NeteaseDjradioSchema,
     NDjradioSchema,
+    NCloudSchema,
     DjradioPrefix,
 )

@@ -7,12 +7,13 @@ from feeluown.gui.widgets.playlist import PlaylistListView, PlaylistListModel, \
 from feeluown.gui.widgets.textbtn import TextButton
 from feeluown.gui.helpers import fetch_cover_wrapper, BgTransparentMixin
 
+from fuo_netease import provider
+
 
 async def render(req, **kwargs):
     app = req.ctx['app']
-    provider = app.library.get('netease')
 
-    playlists = provider._user.rec_playlists
+    playlists = provider.current_user_rec_playlists_p
     view = ExploreView()
     view.daily_rec_btn.clicked.connect(
         lambda: app.browser.goto(page='/providers/netease/daily_recommendation'))

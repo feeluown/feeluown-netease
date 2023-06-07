@@ -3,9 +3,7 @@ import logging
 from marshmallow.exceptions import ValidationError
 
 from feeluown.models import (
-    cached_field,
     BaseModel,
-    UserModel,
     SearchModel,
 )
 from feeluown.utils.reader import RandomSequentialReader
@@ -105,103 +103,3 @@ class NBaseModel(BaseModel):
 
 class NSearchModel(SearchModel, NBaseModel):
     pass
-
-
-class NUserModel(UserModel, NBaseModel):
-    class Meta:
-        fields = ('cookies',)
-        fields_no_get = ('cookies', 'rec_songs', 'rec_playlists',
-                         'fav_artists', 'fav_albums', )
-
-    @classmethod
-    def get(cls, identifier):
-        user = {'id': identifier}
-        user_profile = cls._api.user_profile(identifier)
-        user['name'] = user_profile['nickname']
-        playlists = cls._api.user_playlists(identifier)
-
-        user['playlists'] = []
-        user['fav_playlists'] = []
-        for pl in playlists:
-            if str(pl['userId']) == str(identifier):
-                user['playlists'].append(pl)
-            else:
-                user['fav_playlists'].append(pl)
-        # FIXME: GUI模式下无法显示歌单描述
-        user = _deserialize(user, NeteaseUserSchema)
-        return user
-
-    @cached_field()
-    def rec_playlists(self):
-        playlists_data = self._api.get_recommend_playlists()
-        rec_playlists = []
-        for playlist_data in playlists_data:
-            # FIXME: GUI模式下无法显示歌单描述
-            playlist_data['coverImgUrl'] = playlist_data['picUrl']
-            playlist_data['description'] = None
-            playlist = _deserialize(playlist_data, V2PlaylistSchema)
-            rec_playlists.append(playlist)
-        return rec_playlists
-
-    @property
-    def fav_djradio(self):
-        return create_g(self._api.subscribed_djradio, NeteaseDjradioSchema, 'djRadios')
-
-    @fav_djradio.setter
-    def fav_djradio(self, _):
-        pass
-
-    @property
-    def fav_artists(self):
-        return create_g(self._api.user_favorite_artists, V2BriefArtistSchema)
-
-    @fav_artists.setter
-    def fav_artists(self, _): pass
-
-    @property
-    def fav_albums(self):
-        return create_g(self._api.user_favorite_albums, V2BriefAlbumSchema)
-
-    @fav_albums.setter
-    def fav_albums(self, _): pass
-
-    @property
-    def cloud_songs(self):
-        return create_cloud_songs_g(
-            self._api.cloud_songs,
-            self._api.cloud_songs_detail,
-            V2SongSchemaForV3,
-            NCloudSchema,
-            data_key='simpleSong'
-        )
-
-    @cloud_songs.setter
-    def cloud_songs(self, _): pass
-
-    # 根据过去经验，每日推荐歌曲在每天早上 6:00 刷新，
-    # ttl 设置为 60s 是为了能够比较即时的获取今天推荐。
-    @cached_field(ttl=60)
-    def rec_songs(self):
-        songs_data = self._api.get_recommend_songs()
-        return [_deserialize(song_data, V2SongSchemaForV3)
-                for song_data in songs_data]
-
-    def get_radio(self):
-        songs_data = self._api.get_radio_music()
-        if songs_data is None:
-            logger.error('data should not be None')
-            return None
-        return [_deserialize(song_data, V2SongSchema)
-                for song_data in songs_data]
-
-
-# import loop
-from .schemas import (  # noqa
-    V2SongSchema,
-    V2BriefAlbumSchema,
-    V2BriefArtistSchema,
-    V2PlaylistSchema,
-    NeteaseUserSchema,
-    V2SongSchemaForV3,
-    NDjradioSchema, NeteaseDjradioSchema, NCloudSchema,
-)  # noqa

@@ -1,10 +1,11 @@
 from feeluown.utils import aio
 from feeluown.gui.page_containers.table import Renderer
 
+from fuo_netease import provider
+
 
 async def render(req, **kwargs):
     app = req.ctx['app']
-    provider = app.library.get('netease')
     user = provider._user
 
     app.ui.right_panel.set_body(app.ui.right_panel.table_container)
@@ -20,4 +21,4 @@ class DailyRecommendationRenderer(Renderer):
         self.meta_widget.title = '每日推荐'
         self.meta_widget.show()
 
-        self.show_songs(await aio.run_fn(lambda: self._user.rec_songs))
+        self.show_songs(await aio.run_fn(lambda: provider.current_user_rec_songs_p))

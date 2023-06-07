@@ -37,7 +37,7 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
         self.meta_widget.title = '收藏与关注'
 
         if self.tab_id == Tab.songs:
-            self.show_songs(await aio.run_fn(lambda: self._user.cloud_songs))
+            self.show_songs(await aio.run_fn(provider.current_user_cloud_songs))
             dir_upload_btn = TextButton('上传目录', self.toolbar)
             dir_upload_btn.clicked.connect(
                 lambda: aio.run_afn(self._upload_cloud_songs_bydir))
@@ -49,9 +49,9 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
             refresh_btn.clicked.connect(self._refresh_cloud_songs)
             self.toolbar.add_tmp_button(refresh_btn)
         elif self.tab_id == Tab.albums:
-            self.show_albums(await aio.run_fn(lambda: self._user.fav_albums))
+            self.show_albums(await aio.run_fn(provider.current_user_fav_albums))
         elif self.tab_id == Tab.artists:
-            self.show_artists(await aio.run_fn(lambda: self._user.fav_artists))
+            self.show_artists(await aio.run_fn(provider.current_user_fav_artists))
         elif self.tab_id == Tab.playlists:
             playlists = await aio.run_fn(provider.current_user_fav_djradios)
             self.show_playlists(playlists)
@@ -98,7 +98,6 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
         QMessageBox.information(self.toolbar, '上传音乐', '上传完成！')
 
     def _refresh_cloud_songs(self):
-        self._user.cloud_songs = None
         self.show_by_tab_id(Tab.songs)
 
     def show_by_tab_id(self, tab_id):

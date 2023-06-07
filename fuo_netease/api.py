@@ -388,7 +388,6 @@ class API(object):
             'op': op   # opation
         }
         data = self.request('POST', url_add, data_add)
-        print(data)
         code = data.get('code')
 
         # 从歌单中成功的移除歌曲时，code 是 200
@@ -464,7 +463,6 @@ class API(object):
         url = uri_v3 + '/discovery/recommend/songs'
         payload = self.encrypt_request({})
         res_data = self.request('POST', url, payload)
-        print(res_data)
         if res_data['code'] == 200:
             return res_data['data']['dailySongs']
         raise CodeShouldBe200(res_data)
@@ -680,5 +678,6 @@ api = API()
 if __name__ == '__main__':
     from fuo_netease.login_controller import LoginController
     user = LoginController.load()
-    api.load_cookies(user.cookies)
+    cookies, _ = user.cache_get('cookies')
+    api.load_cookies(cookies)
     print(api.djradio_song_detail(1883706033))

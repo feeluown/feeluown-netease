@@ -3,6 +3,7 @@ import logging
 
 from PyQt5.QtCore import QObject
 
+from feeluown.utils import aio
 from .excs import NeteaseIOError
 from .provider import provider
 from .login_controller import LoginController
@@ -45,7 +46,9 @@ class Nem(QObject):
             return
         logger.debug('Trying to load last login user...')
         user = LoginController.load()
-        if user is None or 'MUSIC_U' not in user.cookies:
+        cookies, exists = user.cache_get('cookies')
+        assert exists
+        if user is None or 'MUSIC_U' not in cookies:
             logger.debug('Trying to load last login user...failed')
             self.login_dialog.show()
             self.login_dialog.load_user_pw()
@@ -79,18 +82,16 @@ class Nem(QObject):
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
         self._app.mymusic_uimgr.add_item(mymusic_fav_item)
 
-        loop = asyncio.get_event_loop()
-        playlists = await loop.run_in_executor(None, lambda: user.playlists)
+        playlists, fav_playlists = await aio.run_fn(provider.current_user_playlists)
         self._app.pl_uimgr.clear()
         self._app.pl_uimgr.add(playlists)
-        self._app.pl_uimgr.add(user.fav_playlists, is_fav=True)
-        # self._app.pl_uimgr.add(user.rec_playlists)
+        self._app.pl_uimgr.add(fav_playlists, is_fav=True)
 
     def activate_fm(self):
         self._app.fm.activate(self.fetch_fm_songs)
 
     def fetch_fm_songs(self, *args, **kwargs):
-        songs = provider._user.get_radio()  # noqa
+        songs = provider.current_user_get_radio_songs()  # noqa
         if songs is None:
             raise NeteaseIOError('unknown error: get no radio songs')
         return songs

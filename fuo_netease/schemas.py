@@ -292,18 +292,6 @@ class V2PlaylistSchema(Schema):
         return PlaylistModel(**data)
 
 
-class NeteaseUserSchema(Schema):
-    identifier = fields.Int(required=True, data_key='id')
-    name = fields.Str(required=True)
-    playlists = fields.List(fields.Nested(V2PlaylistSchema))
-    fav_playlists = fields.List(fields.Nested(V2PlaylistSchema))
-    cookies = fields.Dict()
-
-    @post_load
-    def create_model(self, data, **kwargs):
-        return NUserModel(**data)
-
-
 class NeteaseSearchSchema(Schema):
     """搜索结果 Schema"""
     songs = fields.List(fields.Nested(V2SongSchema))
@@ -317,6 +305,5 @@ class NeteaseSearchSchema(Schema):
 
 
 from .models import (  # noqa
-    NUserModel,
     NSearchModel,
 )  # noqa

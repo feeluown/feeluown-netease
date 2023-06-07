@@ -2,20 +2,20 @@ import json
 import logging
 import os
 
+from feeluown.library import BriefUserModel
 from .api import api
-from .schemas import NeteaseUserSchema
-from .models import _deserialize
 from .consts import USERS_INFO_FILE
 
 logger = logging.getLogger(__name__)
 
 
 def create_user(identifier, name, cookies):
-    user = _deserialize(dict(
-        id=int(identifier),
+    user = BriefUserModel(
+        source='netease',
+        identifier=identifier,
         name=name,
-        cookies=cookies,
-    ), NeteaseUserSchema)
+    )
+    user.cache_set('cookies', cookies)
     return user
 
 
@@ -77,7 +77,7 @@ class LoginController(object):
                 user.name: {
                     'uid': user.identifier,
                     'name': user.name,
-                    'cookies': user.cookies
+                    'cookies': user.cache_get('cookies')[0]
                 }
             }
             if f.read() != '':
