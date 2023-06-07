@@ -64,6 +64,9 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                          avatar_url=data['avatarImg'])
         return user
 
+    def current_user_fav_djradios(self):
+        return create_g(self.api.subscribed_djradio, NeteaseDjradioSchema, 'djRadios')
+
     def song_get(self, identifier):
         data = self.api.song_detail(int(identifier))
         return _deserialize(data, V2SongSchema)
@@ -307,7 +310,25 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         playlist = _deserialize(data, V2PlaylistSchema)
         return playlist
 
+    def djradio_create_songs_rd(self, djradio_id):
+        data = self.api.djradio_list(djradio_id, limit=1, offset=0)
+        count = data.get('count', 0)
+
+        def g():
+            offset = 0
+            per = 50  # speed up first request
+            while offset < count:
+                tracks_data = self.api.djradio_list(
+                    djradio_id, limit=per, offset=offset)
+                for track_data in tracks_data.get('programs', []):
+                    yield _deserialize(track_data, NDjradioSchema)
+                offset += per
+        return create_reader(g())
+
     def playlist_create_songs_rd(self, playlist):
+        if playlist.identifier.startswith(DjradioPrefix):
+            return self.djradio_create_songs_rd(playlist.identifier[len(DjradioPrefix):])
+
         data = self.api.playlist_detail_v3(playlist.identifier, limit=0)
         track_ids = data['trackIds']  # [{'id': 1, 'v': 1}, ...]
         count = len(track_ids)
@@ -371,7 +392,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 provider = NeteaseProvider()
 
 
-from .models import _deserialize  # noqa
+from .models import _deserialize, create_g  # noqa
 from .schemas import (  # noqa
     V2SongSchema,
     V2SongSchemaForV3,
@@ -381,4 +402,7 @@ from .schemas import (  # noqa
     V2BriefAlbumSchema,
     V2PlaylistSchema,
     NeteaseSearchSchema,
+    NeteaseDjradioSchema,
+    NDjradioSchema,
+    DjradioPrefix,
 )

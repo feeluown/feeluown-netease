@@ -17,6 +17,8 @@ def test_playlist_create_songs_rd(songs_detail_v3__191232):
                            return_value={'trackIds': [{'id': 1}]*total_count}):
         with mock.patch.object(provider.api, 'songs_detail_v3',
                                return_value=songs_detail_v3__191232) as mock_song_detail:
-            provider.playlist_create_songs_rd(mock.Mock()).readall()
+            playlist = mock.Mock()
+            playlist.identifier = '111'
+            provider.playlist_create_songs_rd(playlist).readall()
             # 这个调用次数和实现强相关。
             assert mock_song_detail.call_count == 11  # 8050 = per(50)*1 + per(800)*10

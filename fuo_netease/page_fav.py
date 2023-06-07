@@ -9,6 +9,7 @@ from feeluown.gui.base_renderer import LibraryTabRendererMixin
 from feeluown.gui.page_containers.table import Renderer
 from feeluown.gui.widgets.tabbar import Tab
 
+from fuo_netease import provider
 
 logger = logging.getLogger(__name__)
 
@@ -17,17 +18,18 @@ async def render(req, **kwargs):
     app = req.ctx['app']
     app.ui.right_panel.set_body(app.ui.table_container)
 
-    provider = app.library.get('netease')
     tab_id = Tab(int(req.query.get('tab_id', Tab.songs.value)))
     # FIXM
-    renderer = FavRenderer(tab_id, provider._user)
+    renderer = FavRenderer(tab_id)
     await app.ui.table_container.set_renderer(renderer)
 
 
 class FavRenderer(Renderer, LibraryTabRendererMixin):
-    def __init__(self, tab_id, user):
+    def __init__(self, tab_id):
+        global provider
+
         self.tab_id = tab_id
-        self._user = user
+        self._user = provider._user
 
     async def render(self):
         self.render_tabbar()
@@ -51,7 +53,8 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
         elif self.tab_id == Tab.artists:
             self.show_artists(await aio.run_fn(lambda: self._user.fav_artists))
         elif self.tab_id == Tab.playlists:
-            self.show_playlists(await aio.run_fn(lambda: self._user.fav_djradio))
+            playlists = await aio.run_fn(provider.current_user_fav_djradios)
+            self.show_playlists(playlists)
 
     async def _upload_cloud_songs_bydir(self):
         # FIXME: 目前无法根据当前页面进行自动刷新, 只能手动刷新

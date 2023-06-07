@@ -5,11 +5,10 @@ from marshmallow.exceptions import ValidationError
 from feeluown.models import (
     cached_field,
     BaseModel,
-    PlaylistModel,
     UserModel,
     SearchModel,
 )
-from feeluown.utils.reader import RandomSequentialReader, SequentialReader
+from feeluown.utils.reader import RandomSequentialReader
 
 from .provider import provider
 from .excs import NeteaseIOError
@@ -102,33 +101,6 @@ class NBaseModel(BaseModel):
     class Meta:
         allow_get = True
         provider = provider
-
-
-class NRadioModel(PlaylistModel, NBaseModel):
-    class Meta:
-        allow_create_songs_g = True
-
-    def create_songs_g(self):
-        data = self._api.djradio_list(self.identifier, limit=1, offset=0)
-        count = data.get('count', 0)
-
-        def g():
-            offset = 0
-            per = 50  # speed up first request
-            while offset < count:
-                tracks_data = self._api.djradio_list(
-                    self.identifier, limit=per, offset=offset)
-                for track_data in tracks_data.get('programs', []):
-                    yield _deserialize(track_data, NDjradioSchema)
-                offset += per
-
-        return SequentialReader(g(), count)
-
-    @classmethod
-    def get(cls, identifier):
-        data = cls._api.djradio_detail(identifier)
-        radio = _deserialize(data, NDjradioSchema)
-        return radio
 
 
 class NSearchModel(SearchModel, NBaseModel):

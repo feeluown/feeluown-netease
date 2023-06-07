@@ -31,6 +31,7 @@ class BaseSchema(Schema):
 
 Schema = BaseSchema
 Unknown = 'Unknown'
+DjradioPrefix = 'djradio_'
 
 
 def create_model(model_cls, data, fields_to_cache=None):
@@ -206,12 +207,15 @@ class NAlbumSchemaV3(Schema):
 class NeteaseDjradioSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     name = fields.Str(required=True)
-    desc = fields.Str(required=False)
+    description = fields.Str(data_key='desc', required=False)
     cover = fields.Str(required=False, data_key='picUrl')
 
     @post_load
     def create_model(self, data, **kwargs):
-        return NRadioModel(**data)
+        identifier = data['identifier']
+        data['identifier'] = f'{DjradioPrefix}{identifier}'
+        # TODO: set creator properly.
+        return PlaylistModel(**data, creator=None)
 
 
 class NDjradioSchema(Schema):
@@ -315,5 +319,4 @@ class NeteaseSearchSchema(Schema):
 from .models import (  # noqa
     NUserModel,
     NSearchModel,
-    NRadioModel,
 )  # noqa
