@@ -16,6 +16,7 @@ from marshmallow import Schema, post_load, fields, EXCLUDE
 from feeluown.library import (
     SongModel, BriefAlbumModel, BriefArtistModel, ModelState, BriefSongModel,
     VideoModel, AlbumModel, ArtistModel, PlaylistModel, BriefUserModel,
+    SimpleSearchResult,
 )
 from feeluown.media import Quality, MediaType, Media
 
@@ -294,6 +295,7 @@ class V2PlaylistSchema(Schema):
 
 class NeteaseSearchSchema(Schema):
     """搜索结果 Schema"""
+    q = fields.Str()
     songs = fields.List(fields.Nested(V2SongSchema))
     albums = fields.List(fields.Nested(V2AlbumSchema))
     artists = fields.List(fields.Nested(V2BriefArtistSchema))
@@ -301,9 +303,5 @@ class NeteaseSearchSchema(Schema):
 
     @post_load
     def create_model(self, data, **kwargs):
-        return NSearchModel(**data)
-
-
-from .models import (  # noqa
-    NSearchModel,
-)  # noqa
+        data.pop('source')
+        return SimpleSearchResult(**data)

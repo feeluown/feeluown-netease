@@ -1,14 +1,8 @@
 import logging
 
 from marshmallow.exceptions import ValidationError
-
-from feeluown.models import (
-    BaseModel,
-    SearchModel,
-)
 from feeluown.utils.reader import RandomSequentialReader
 
-from .provider import provider
 from .excs import NeteaseIOError
 
 logger = logging.getLogger(__name__)
@@ -90,16 +84,3 @@ def create_cloud_songs_g(func, func_extra, schema=None, schema_extra=None,
                                     read_func=read_func,
                                     max_per_read=200)
     return reader
-
-
-class NBaseModel(BaseModel):
-    # FIXME: remove _detail_fields and _api to Meta
-    _api = provider.api
-
-    class Meta:
-        allow_get = True
-        provider = provider
-
-
-class NSearchModel(SearchModel, NBaseModel):
-    pass

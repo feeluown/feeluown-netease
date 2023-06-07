@@ -4,7 +4,8 @@ from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, 
     CommentModel, BriefCommentModel, BriefUserModel, UserModel, \
     NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
-from feeluown.models import ModelType, SearchType, cached_field
+from feeluown.library import ModelType, SearchType
+from feeluown.utils.cache import cached_field
 from feeluown.utils.reader import create_reader, SequentialReader
 from .api import API
 
@@ -441,8 +442,8 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             SearchType.pl: 1000,
         }
         data = provider.api.search(keyword, stype=type_type_map[type_])
+        data['q'] = keyword
         result = _deserialize(data, NeteaseSearchSchema)
-        result.q = keyword
         return result
 
 
@@ -459,8 +460,8 @@ from .schemas import (  # noqa
     V2BriefArtistSchema,
     V2BriefAlbumSchema,
     V2PlaylistSchema,
-    NeteaseSearchSchema,
     NeteaseDjradioSchema,
+    NeteaseSearchSchema,
     NDjradioSchema,
     NCloudSchema,
     DjradioPrefix,
