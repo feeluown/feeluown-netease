@@ -11,6 +11,10 @@ pip3 install fuo-netease
 ```
 
 ## changelog
+
+### 0.9.6 (2023-06-08)
+- 移除对 feeluown.models 的依赖
+
 ### 0.9.5 (2023-04-27)
 - 提供双语歌词
 
