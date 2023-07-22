@@ -44,19 +44,22 @@ class Nem(QObject):
             logger.debug('You have already logined in.')
             asyncio.ensure_future(self.login_as(self._user))
             return
+
         logger.debug('Trying to load last login user...')
         user = LoginController.load()
-        cookies, exists = user.cache_get('cookies')
-        assert exists
-        if user is None or 'MUSIC_U' not in cookies:
-            logger.debug('Trying to load last login user...failed')
-            self.login_dialog.show()
-            self.login_dialog.load_user_pw()
-            self.login_dialog.login_success.connect(
-                lambda user: asyncio.ensure_future(self.login_as(user)))
-        else:
-            logger.debug('Trying to load last login user...done')
-            asyncio.ensure_future(self.login_as(user))
+        if user is not None:
+            cookies, exists = user.cache_get('cookies')
+            assert exists
+            if 'MUSIC_U' in cookies:
+                logger.debug('Trying to load last login user...done')
+                asyncio.ensure_future(self.login_as(user))
+                return
+
+        logger.debug('Trying to load last login user...failed')
+        self.login_dialog.show()
+        self.login_dialog.load_user_pw()
+        self.login_dialog.login_success.connect(
+            lambda user: asyncio.ensure_future(self.login_as(user)))
 
     async def login_as(self, user):
         provider.auth(user)
