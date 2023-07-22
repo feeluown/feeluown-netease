@@ -12,6 +12,9 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.9.7 (2023-07-22)
+- 修复登录失败的问题：'NoneType' object has no attribute 'cache_get'
+
 ### 0.9.6 (2023-06-08)
 - 移除对 feeluown.models 的依赖
 
