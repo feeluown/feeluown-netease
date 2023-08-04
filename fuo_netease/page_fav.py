@@ -73,7 +73,7 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
                           if f.rsplit('.', 1)[-1] in exts])
 
         for idx, path in enumerate(paths):
-            ok = await aio.run_fn(self._user.meta.provider.upload_song, path)
+            ok = await aio.run_fn(provider.upload_song, path)
             if ok:
                 logger.warning(f'[{idx + 1}/{len(paths)}]{path} 上传成功!')
             else:
@@ -90,7 +90,7 @@ class FavRenderer(Renderer, LibraryTabRendererMixin):
             return
 
         for idx, path in enumerate(paths):
-            ok = await aio.run_fn(self._user.meta.provider.upload_song, path)
+            ok = await aio.run_fn(provider.upload_song, path)
             if ok:
                 logger.warning(f'[{idx + 1}/{len(paths)}]{path} 上传成功!')
             else:
