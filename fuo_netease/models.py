@@ -1,6 +1,5 @@
 import logging
 
-from marshmallow.exceptions import ValidationError
 from feeluown.utils.reader import RandomSequentialReader
 
 from .excs import NeteaseIOError
