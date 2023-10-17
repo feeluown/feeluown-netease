@@ -1,9 +1,10 @@
 import asyncio
 import logging
-
-from PyQt5.QtCore import QObject
+import os
 
 from feeluown.utils import aio
+from feeluown.gui.provider_ui import AbstractProviderUi
+
 from .excs import NeteaseIOError
 from .provider import provider
 from .login_controller import LoginController
@@ -13,14 +14,12 @@ from .ui import LoginDialog
 logger = logging.getLogger(__name__)
 
 
-class Nem(QObject):
+class NeteaseProviderUI(AbstractProviderUi):
     """
-
     FIXME: 简化 login_as 和 ready_to_login 两个方法的实现逻辑
     """
 
     def __init__(self, app):
-        super(Nem, self).__init__(parent=app)
         self._app = app
         self.login_dialog = LoginDialog(
             verify_captcha=LoginController.check_captcha,
@@ -28,18 +27,24 @@ class Nem(QObject):
             create_user=LoginController.create,
         )
         self._user = None
-        self._pm = None
 
-    def initialize(self):
+    @property
+    def provider(self):
+        return provider
+
+    def get_colorful_svg(self) -> str:
+        return os.path.join(os.path.dirname(__file__), 'assets', 'icon.svg')
+
+    def register_pages(self, route):
         from .page_explore import render as explore_render # noqa
         from .page_fav import render as fav_render  # noqa
         from .page_daily_recommendation import render as dr_render
 
-        self._app.browser.route('/providers/netease/explore')(explore_render)
-        self._app.browser.route('/providers/netease/fav')(fav_render)
-        self._app.browser.route('/providers/netease/daily_recommendation')(dr_render)
+        route('/providers/netease/explore')(explore_render)
+        route('/providers/netease/fav')(fav_render)
+        route('/providers/netease/daily_recommendation')(dr_render)
 
-    def ready_to_login(self):
+    def login_or_go_home(self):
         if self._user is not None:
             logger.debug('You have already logined in.')
             asyncio.ensure_future(self.login_as(self._user))
@@ -61,6 +66,9 @@ class Nem(QObject):
         self.login_dialog.login_success.connect(
             lambda user: asyncio.ensure_future(self.login_as(user)))
 
+    def popup_create_playlist_dialog(self):
+        pass
+
     async def login_as(self, user):
         provider.auth(user)
         self._user = user
@@ -74,7 +82,7 @@ class Nem(QObject):
             lambda: self._app.browser.goto(page='/providers/netease/explore'),
             weak=False)
         mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
-        mymusic_fm_item.clicked.connect(self.activate_fm)
+        mymusic_fm_item.clicked.connect(self._activate_fm)
         mymusic_fav_item = self._app.mymusic_uimgr.create_item('♥ 收藏与关注')
         mymusic_fav_item.clicked.connect(
             lambda: self._app.browser.goto(page='/providers/netease/fav'),
@@ -90,10 +98,10 @@ class Nem(QObject):
         self._app.pl_uimgr.add(playlists)
         self._app.pl_uimgr.add(fav_playlists, is_fav=True)
 
-    def activate_fm(self):
-        self._app.fm.activate(self.fetch_fm_songs)
+    def _activate_fm(self):
+        self._app.fm.activate(self._fetch_fm_songs)
 
-    def fetch_fm_songs(self, *args, **kwargs):
+    def _fetch_fm_songs(self, *args, **kwargs):
         songs = provider.current_user_get_radio_songs()  # noqa
         if songs is None:
             raise NeteaseIOError('unknown error: get no radio songs')
