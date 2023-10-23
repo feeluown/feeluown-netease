@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from typing import TYPE_CHECKING
 
 from feeluown.utils import aio
 from feeluown.gui.provider_ui import AbstractProviderUi
@@ -10,6 +11,8 @@ from .provider import provider
 from .login_controller import LoginController
 from .ui import LoginDialog
 
+if TYPE_CHECKING:
+    from feeluown.app.gui_app import GuiApp
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +22,7 @@ class NeteaseProviderUI(AbstractProviderUi):
     FIXME: 简化 login_as 和 ready_to_login 两个方法的实现逻辑
     """
 
-    def __init__(self, app):
+    def __init__(self, app: 'GuiApp'):
         self._app = app
         self.login_dialog = LoginDialog(
             verify_captcha=LoginController.check_captcha,
@@ -66,15 +69,13 @@ class NeteaseProviderUI(AbstractProviderUi):
         self.login_dialog.login_success.connect(
             lambda user: asyncio.ensure_future(self.login_as(user)))
 
-    def popup_create_playlist_dialog(self):
-        pass
-
     async def login_as(self, user):
         provider.auth(user)
         self._user = user
         LoginController.save(user)
         left_panel = self._app.ui.left_panel
         left_panel.playlists_con.show()
+        left_panel.playlists_con.create_btn.show()
         left_panel.my_music_con.show()
 
         mymusic_explore_item = self._app.mymusic_uimgr.create_item('🎵 发现音乐')
@@ -93,7 +94,10 @@ class NeteaseProviderUI(AbstractProviderUi):
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
         self._app.mymusic_uimgr.add_item(mymusic_fav_item)
 
-        playlists, fav_playlists = await aio.run_fn(provider.current_user_playlists)
+        await self._refresh_current_user_playlists()
+
+    async def _refresh_current_user_playlists(self):
+        playlists, fav_playlists = await aio.run_fn(self.provider.current_user_playlists)
         self._app.pl_uimgr.clear()
         self._app.pl_uimgr.add(playlists)
         self._app.pl_uimgr.add(fav_playlists, is_fav=True)

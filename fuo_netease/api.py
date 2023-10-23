@@ -212,14 +212,16 @@ class API(object):
         res_data = self.request('POST', url, data)
         return res_data
 
-    def new_playlist(self, uid, name='default'):
+    def new_playlist(self, uid, name):
         url = uri + '/playlist/create'
         data = {
             'uid': uid,
             'name': name
         }
         res_data = self.request('POST', url, data)
-        return res_data
+        if res_data['code'] == 200:
+            return res_data['playlist']
+        raise CodeShouldBe200(res_data)
 
     def delete_playlist(self, pid):
         url = uri + '/playlist/delete'
@@ -227,7 +229,10 @@ class API(object):
             'id': pid,
             'pid': pid
         }
-        return self.request('POST', url, data)
+        res_data = self.request('POST', url, data)
+        if res_data['code'] == 200:
+            return
+        raise CodeShouldBe200(res_data)
 
     def artist_infos(self, artist_id):
         """

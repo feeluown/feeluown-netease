@@ -7,7 +7,7 @@ from feeluown.media import Quality, Media
 from feeluown.library import ModelType, SearchType
 from feeluown.utils.cache import cached_field
 from feeluown.utils.reader import create_reader, SequentialReader
-from .api import API
+from .api import API, CodeShouldBe200
 
 
 logger = logging.getLogger(__name__)
@@ -367,6 +367,24 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         data = self.api.playlist_detail_v3(identifier, limit=0)
         playlist = _deserialize(data, V2PlaylistSchema)
         return playlist
+
+    def playlist_delete(self, identifier):
+        try:
+            self.api.delete_playlist(identifier)
+        except CodeShouldBe200 as e:
+            logger.warning(f'delete playlist failed, {e}')
+            return False
+        return True
+
+    def playlist_create_by_name(self, name):
+        """
+        :raises NoUserLoggedIn:
+        :raises CodeShouldBe200: create playlist failed
+        """
+        user = self.get_current_user()
+        uid = user.identifier
+        data = self.api.new_playlist(uid, name)
+        return _deserialize(data, V2PlaylistSchema)
 
     def djradio_create_songs_rd(self, djradio_id):
         data = self.api.djradio_list(djradio_id, limit=1, offset=0)
