@@ -184,14 +184,14 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                 )
             else:
                 parent = None
-            comment = CommentModel(identifier=comment_data['commentId'],
+            comment = CommentModel(identifier=str(comment_data['commentId']),
                                    source=SOURCE,
                                    user=user,
                                    content=comment_data['content'],
                                    liked_count=comment_data['likedCount'],
                                    time=comment_data['time'] // 1000,
                                    parent=parent,
-                                   root_comment_id=comment_data['parentCommentId'])
+                                   root_comment_id=str(comment_data['parentCommentId']))
             hot_comments.append(comment)
         return hot_comments
 

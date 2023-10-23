@@ -139,13 +139,14 @@ class V2SongSchemaForV3(Schema):
     identifier = fields.Int(required=True, data_key='id')
     title = fields.Str(required=True, data_key='name')
     duration = fields.Float(required=True, data_key='dt')
-    album = fields.Nested('V2BriefAlbumSchema', data_key='al')
-    artists = fields.List(fields.Nested('V2BriefArtistSchema'), data_key='ar')
+    album = fields.Nested('V2BriefAlbumSchema', data_key='al', allow_none=True)
+    artists = fields.List(fields.Nested('V2BriefArtistSchema'), data_key='ar', allow_none=True)
 
     mv_id = fields.Int(required=True, data_key='mv')
 
     @post_load
     def create_v2_model(self, data, **kwargs):
+        data['artists'] = data['artists'] or []
         return create_model(SongModel, data, ['mv_id'])
 
 
