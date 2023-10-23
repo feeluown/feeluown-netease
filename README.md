@@ -12,6 +12,10 @@ pip3 install fuo-netease
 
 ## changelog
 
+### 0.9.8 (2023-10-24)
+- 支持新建、删除歌单
+- 修复若干问题
+
 ### 0.9.7 (2023-07-22)
 - 修复登录失败的问题：'NoneType' object has no attribute 'cache_get'
 
