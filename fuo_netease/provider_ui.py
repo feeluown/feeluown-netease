@@ -1,10 +1,14 @@
 import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from feeluown.utils import aio
-from feeluown.gui.provider_ui import AbstractProviderUi
+from feeluown.gui.provider_ui import (
+    AbstractProviderUi,
+    UISupportsLoginOrGoHome,
+    UISupportsDiscovery,
+)
 
 from .excs import NeteaseIOError
 from .provider import provider
@@ -15,6 +19,10 @@ if TYPE_CHECKING:
     from feeluown.app.gui_app import GuiApp
 
 logger = logging.getLogger(__name__)
+
+
+class UISupports(UISupportsLoginOrGoHome, UISupportsDiscovery, Protocol):
+    ...
 
 
 class NeteaseProviderUI(AbstractProviderUi):
@@ -31,6 +39,9 @@ class NeteaseProviderUI(AbstractProviderUi):
         )
         self._user = None
 
+    def _(self) -> UISupports:
+        return self
+
     @property
     def provider(self):
         return provider
@@ -46,6 +57,7 @@ class NeteaseProviderUI(AbstractProviderUi):
         route('/providers/netease/explore')(explore_render)
         route('/providers/netease/fav')(fav_render)
         route('/providers/netease/daily_recommendation')(dr_render)
+        route('/providers/netease/discovery')(explore_render)
 
     def login_or_go_home(self):
         if self._user is not None:
@@ -69,6 +81,10 @@ class NeteaseProviderUI(AbstractProviderUi):
         self.login_dialog.login_success.connect(
             lambda user: asyncio.ensure_future(self.login_as(user)))
 
+    def discovery(self):
+        """Implements UISupportsDiscovery.discovery."""
+        self._app.browser.goto(page='/providers/netease/discovery')
+
     async def login_as(self, user):
         provider.auth(user)
         self._user = user
@@ -78,10 +94,6 @@ class NeteaseProviderUI(AbstractProviderUi):
         left_panel.playlists_con.create_btn.show()
         left_panel.my_music_con.show()
 
-        mymusic_explore_item = self._app.mymusic_uimgr.create_item('🎵 发现音乐')
-        mymusic_explore_item.clicked.connect(
-            lambda: self._app.browser.goto(page='/providers/netease/explore'),
-            weak=False)
         mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
         mymusic_fm_item.clicked.connect(self._activate_fm)
         mymusic_fav_item = self._app.mymusic_uimgr.create_item('♥ 收藏与关注')
@@ -90,7 +102,6 @@ class NeteaseProviderUI(AbstractProviderUi):
             weak=False)
 
         self._app.mymusic_uimgr.clear()
-        self._app.mymusic_uimgr.add_item(mymusic_explore_item)
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
         self._app.mymusic_uimgr.add_item(mymusic_fav_item)
 
