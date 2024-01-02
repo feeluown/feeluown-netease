@@ -50,14 +50,14 @@ class NeteaseProviderUI(AbstractProviderUi):
         return os.path.join(os.path.dirname(__file__), 'assets', 'icon.svg')
 
     def register_pages(self, route):
-        from .page_explore import render as explore_render # noqa
+        # from .page_explore import render as explore_render # noqa
         from .page_fav import render as fav_render  # noqa
         from .page_daily_recommendation import render as dr_render
 
-        route('/providers/netease/explore')(explore_render)
+        # route('/providers/netease/explore')(explore_render)
         route('/providers/netease/fav')(fav_render)
         route('/providers/netease/daily_recommendation')(dr_render)
-        route('/providers/netease/discovery')(explore_render)
+        # route('/providers/netease/discovery')(explore_render)
 
     def login_or_go_home(self):
         if self._user is not None:
