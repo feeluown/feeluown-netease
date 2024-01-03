@@ -5,7 +5,6 @@ from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, 
     NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
 from feeluown.library import ModelType, SearchType
-from feeluown.utils.cache import cached_field
 from feeluown.utils.reader import create_reader, SequentialReader
 from .api import API, CodeShouldBe200
 
@@ -105,8 +104,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return [_deserialize(song_data, V2SongSchema)
                 for song_data in songs_data]
 
-    @cached_field()
-    def current_user_rec_playlists_p(self):
+    def rec_list_daily_playlists(self):
         playlists_data = self.api.get_recommend_playlists()
         rec_playlists = []
         for playlist_data in playlists_data:
@@ -117,10 +115,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             rec_playlists.append(playlist)
         return rec_playlists
 
-    # 根据过去经验，每日推荐歌曲在每天早上 6:00 刷新，
-    # ttl 设置为 60s 是为了能够比较即时的获取今天推荐。
-    @cached_field(ttl=60)
-    def current_user_rec_songs_p(self):
+    def rec_list_daily_songs(self):
         songs_data = self.api.get_recommend_songs()
         return [_deserialize(song_data, V2SongSchemaForV3)
                 for song_data in songs_data]

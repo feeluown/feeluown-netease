@@ -1,10 +1,13 @@
 import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from feeluown.utils import aio
-from feeluown.gui.provider_ui import AbstractProviderUi
+from feeluown.gui.provider_ui import (
+    AbstractProviderUi,
+    UISupportsLoginOrGoHome,
+)
 
 from .excs import NeteaseIOError
 from .provider import provider
@@ -15,6 +18,10 @@ if TYPE_CHECKING:
     from feeluown.app.gui_app import GuiApp
 
 logger = logging.getLogger(__name__)
+
+
+class UISupports(UISupportsLoginOrGoHome, Protocol):
+    ...
 
 
 class NeteaseProviderUI(AbstractProviderUi):
@@ -31,6 +38,9 @@ class NeteaseProviderUI(AbstractProviderUi):
         )
         self._user = None
 
+    def _(self) -> UISupports:
+        return self
+
     @property
     def provider(self):
         return provider
@@ -39,11 +49,9 @@ class NeteaseProviderUI(AbstractProviderUi):
         return os.path.join(os.path.dirname(__file__), 'assets', 'icon.svg')
 
     def register_pages(self, route):
-        from .page_explore import render as explore_render # noqa
         from .page_fav import render as fav_render  # noqa
         from .page_daily_recommendation import render as dr_render
 
-        route('/providers/netease/explore')(explore_render)
         route('/providers/netease/fav')(fav_render)
         route('/providers/netease/daily_recommendation')(dr_render)
 
@@ -78,10 +86,6 @@ class NeteaseProviderUI(AbstractProviderUi):
         left_panel.playlists_con.create_btn.show()
         left_panel.my_music_con.show()
 
-        mymusic_explore_item = self._app.mymusic_uimgr.create_item('🎵 发现音乐')
-        mymusic_explore_item.clicked.connect(
-            lambda: self._app.browser.goto(page='/providers/netease/explore'),
-            weak=False)
         mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
         mymusic_fm_item.clicked.connect(self._activate_fm)
         mymusic_fav_item = self._app.mymusic_uimgr.create_item('♥ 收藏与关注')
@@ -90,7 +94,6 @@ class NeteaseProviderUI(AbstractProviderUi):
             weak=False)
 
         self._app.mymusic_uimgr.clear()
-        self._app.mymusic_uimgr.add_item(mymusic_explore_item)
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
         self._app.mymusic_uimgr.add_item(mymusic_fav_item)
 

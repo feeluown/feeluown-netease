@@ -140,7 +140,9 @@ class V2SongSchemaForV3(Schema):
     title = fields.Str(required=True, data_key='name')
     duration = fields.Float(required=True, data_key='dt')
     album = fields.Nested('V2BriefAlbumSchema', data_key='al', allow_none=True)
-    artists = fields.List(fields.Nested('V2BriefArtistSchema'), data_key='ar', allow_none=True)
+    artists = fields.List(fields.Nested('V2BriefArtistSchema'),
+                          data_key='ar',
+                          allow_none=True)
 
     mv_id = fields.Int(required=True, data_key='mv')
 

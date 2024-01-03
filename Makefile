@@ -5,6 +5,9 @@ all: test
 lint:
 	flake8 fuo_netease/
 
+pyright:
+	pyright fuo_netease/provider_ui.py
+
 unittest: pytest
 
 pytest:
