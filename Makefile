@@ -6,7 +6,7 @@ lint:
 	flake8 fuo_netease/
 
 pyright:
-	pyright fuo_netease/provider_ui.py fuo_netease/page_discovery.py
+	pyright fuo_netease/provider_ui.py
 
 unittest: pytest
 

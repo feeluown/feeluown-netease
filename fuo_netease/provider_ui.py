@@ -7,7 +7,6 @@ from feeluown.utils import aio
 from feeluown.gui.provider_ui import (
     AbstractProviderUi,
     UISupportsLoginOrGoHome,
-    UISupportsDiscovery,
 )
 
 from .excs import NeteaseIOError
@@ -21,7 +20,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class UISupports(UISupportsLoginOrGoHome, UISupportsDiscovery, Protocol):
+class UISupports(UISupportsLoginOrGoHome, Protocol):
     ...
 
 
@@ -50,14 +49,11 @@ class NeteaseProviderUI(AbstractProviderUi):
         return os.path.join(os.path.dirname(__file__), 'assets', 'icon.svg')
 
     def register_pages(self, route):
-        # from .page_explore import render as explore_render # noqa
         from .page_fav import render as fav_render  # noqa
         from .page_daily_recommendation import render as dr_render
 
-        # route('/providers/netease/explore')(explore_render)
         route('/providers/netease/fav')(fav_render)
         route('/providers/netease/daily_recommendation')(dr_render)
-        # route('/providers/netease/discovery')(explore_render)
 
     def login_or_go_home(self):
         if self._user is not None:
@@ -80,10 +76,6 @@ class NeteaseProviderUI(AbstractProviderUi):
         self.login_dialog.load_user_pw()
         self.login_dialog.login_success.connect(
             lambda user: asyncio.ensure_future(self.login_as(user)))
-
-    def discovery(self):
-        """Implements UISupportsDiscovery.discovery."""
-        self._app.browser.goto(page='/providers/netease/discovery')
 
     async def login_as(self, user):
         provider.auth(user)

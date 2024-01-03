@@ -5,7 +5,6 @@ from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, 
     NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
 from feeluown.library import ModelType, SearchType
-from feeluown.utils.cache import cached_field
 from feeluown.utils.reader import create_reader, SequentialReader
 from .api import API, CodeShouldBe200
 
