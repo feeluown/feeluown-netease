@@ -65,13 +65,13 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                          avatar_url=data['avatarImg'])
         return user
 
-    def current_user_fav_djradios(self):
+    def current_user_fav_create_playlists_rd(self):
         return create_g(self.api.subscribed_djradio, NeteaseDjradioSchema, 'djRadios')
 
-    def current_user_fav_artists(self):
+    def current_user_fav_create_artists_rd(self):
         return create_g(self.api.user_favorite_artists, V2BriefArtistSchema)
 
-    def current_user_fav_albums(self):
+    def current_user_fav_create_albums_rd(self):
         return create_g(self.api.user_favorite_albums, V2BriefAlbumSchema)
 
     def current_user_cloud_songs(self):

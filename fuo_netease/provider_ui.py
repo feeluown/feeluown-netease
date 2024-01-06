@@ -50,10 +50,8 @@ class NeteaseProviderUI(AbstractProviderUi):
 
     def register_pages(self, route):
         from .page_fav import render as fav_render  # noqa
-        from .page_daily_recommendation import render as dr_render
 
         route('/providers/netease/fav')(fav_render)
-        route('/providers/netease/daily_recommendation')(dr_render)
 
     def login_or_go_home(self):
         if self._user is not None:
@@ -88,14 +86,14 @@ class NeteaseProviderUI(AbstractProviderUi):
 
         mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
         mymusic_fm_item.clicked.connect(self._activate_fm)
-        mymusic_fav_item = self._app.mymusic_uimgr.create_item('♥ 收藏与关注')
-        mymusic_fav_item.clicked.connect(
+        mymusic_cloud_item = self._app.mymusic_uimgr.create_item('☁ 云盘歌曲')
+        mymusic_cloud_item.clicked.connect(
             lambda: self._app.browser.goto(page='/providers/netease/fav'),
             weak=False)
 
         self._app.mymusic_uimgr.clear()
         self._app.mymusic_uimgr.add_item(mymusic_fm_item)
-        self._app.mymusic_uimgr.add_item(mymusic_fav_item)
+        self._app.mymusic_uimgr.add_item(mymusic_cloud_item)
 
         await self._refresh_current_user_playlists()
 
