@@ -453,7 +453,9 @@ class API(object):
         }
         """
         # tv 表示翻译。-1：表示要翻译，1：不要
-        url = uri + '/song/lyric?' + 'id=' + str(mid) + '&lv=1&kv=1&tv=-1'
+        # lv 为 1 时，对于纯音乐，API 返回的歌词为空
+        # lv 为 -1 时，纯音乐返回的歌词是：纯音乐，请欣赏
+        url = uri + '/song/lyric?' + 'id=' + str(mid) + '&lv=-1&kv=1&tv=-1'
         return self.request('GET', url)
 
     def get_similar_song(self, mid, offset=0, limit=10):
