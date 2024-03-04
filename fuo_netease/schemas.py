@@ -16,7 +16,7 @@ from marshmallow import Schema, post_load, fields, EXCLUDE
 from feeluown.library import (
     SongModel, BriefAlbumModel, BriefArtistModel, ModelState, BriefSongModel,
     VideoModel, AlbumModel, ArtistModel, PlaylistModel, BriefUserModel,
-    SimpleSearchResult,
+    SimpleSearchResult, MediaFlags,
 )
 from feeluown.media import Quality, MediaType, Media
 
@@ -126,12 +126,23 @@ class V2SongSchema(Schema):
     mv_id = fields.Int(required=True, data_key='mvid')
     comment_thread_id = fields.Str(data_key='commentThreadId',
                                    allow_none=True, missing=None)
+    fee = fields.Int(required=True)
 
     @post_load
     def create_v2_model(self, data, **kwargs):
         # https://github.com/feeluown/FeelUOwn/issues/499
         if data['title'] is None:
             data['title'] = Unknown
+
+        # 0: 免费或无版权
+        # 1: VIP 歌曲
+        # 4: 购买专辑
+        # 8: 非会员可免费播放低音质，会员可播放高音质及下载
+        fee = data.pop('fee')
+        if fee == 1:
+            data['media_flags'] = MediaFlags.vip
+        elif fee == 4:
+            data['media_flags'] = MediaFlags.pay
         return create_model(SongModel, data, ['mv_id', 'comment_thread_id'])
 
 

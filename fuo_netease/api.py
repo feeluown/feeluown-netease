@@ -27,9 +27,10 @@ logger = logging.getLogger(__name__)
 class CodeShouldBe200(NeteaseIOError):
     def __init__(self, data):
         self._code = data['code']
+        self._data = data
 
     def __str__(self):
-        return 'json code field should be 200, got {}'.format(self._code)
+        return f'json code field should be 200, got {self._code}. data: {self._data}'
 
 
 class API(object):
@@ -321,9 +322,11 @@ class API(object):
         action = uri + '/song/detail/?id=' + str(music_id) + '&ids=[' +\
             str(music_id) + ']'
         data = self.request('GET', action)
-        if data['songs']:
-            return data['songs'][0]
-        return
+        if data['code'] == 200:
+            if data['songs']:
+                return data['songs'][0]
+            return
+        raise CodeShouldBe200(data)
 
     def weapi_songs_url(self, music_ids, bitrate=320000):
         """
