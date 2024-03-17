@@ -105,6 +105,9 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                 for song_data in songs_data]
 
     def rec_list_daily_playlists(self):
+        if not self.has_current_user():
+            return []
+
         playlists_data = self.api.get_recommend_playlists()
         rec_playlists = []
         for playlist_data in playlists_data:
