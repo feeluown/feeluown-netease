@@ -327,7 +327,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             while offset < count:
                 data = self.api.artist_songs(artist.identifier, offset, per)
                 for song_data in data['songs']:
-                    yield _deserialize(song_data, V2SongSchema)
+                    yield _deserialize(song_data, V2SongSchemaForV3)
                     # In reality, len(data['songs']) may smaller than per,
                     # which is a bug of netease server side, so we set
                     # offset to `offset + per` here.

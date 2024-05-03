@@ -250,8 +250,13 @@ class API(object):
         return data
 
     def artist_songs(self, artist_id, offset=0, limit=50):
-        action = uri_we + '/artist/songs'
-        data = dict(id=artist_id, limit=limit, offset=offset, n=limit)
+        action = uri_v1 + '/artist/songs'
+        data = dict(id=artist_id,
+                    limit=limit,
+                    offset=offset,
+                    order='hot',
+                    work_type=1,
+                    private_cloud='true')
         payload = self.encrypt_request(data)
         res_data = self.request('POST', action, payload)
         if res_data['code'] == 200:
