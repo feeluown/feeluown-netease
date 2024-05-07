@@ -630,6 +630,13 @@ class API(object):
         payload = self.eapi_encrypt(b'/api/v1/dj/program/byradio', data)
         return self.request('POST', url, {'params': payload})
 
+    def list_toplist(self):
+        url = uri + '/toplist'
+        data = self.request('GET', url)
+        if data['code'] == 200:
+            return data['list']
+        raise CodeShouldBe200(data)
+
     def _create_aes_key(self, size):
         return (''.join([hex(b)[2:] for b in os.urandom(size)]))[0:16]
 

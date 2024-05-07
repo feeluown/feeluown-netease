@@ -84,9 +84,9 @@ class NeteaseProviderUI(AbstractProviderUi):
         left_panel.playlists_con.create_btn.show()
         left_panel.my_music_con.show()
 
-        mymusic_fm_item = self._app.mymusic_uimgr.create_item('📻 私人 FM')
+        mymusic_fm_item = self._app.mymusic_uimgr.create_item('私人 FM')
         mymusic_fm_item.clicked.connect(self._activate_fm)
-        mymusic_cloud_item = self._app.mymusic_uimgr.create_item('☁ 云盘歌曲')
+        mymusic_cloud_item = self._app.mymusic_uimgr.create_item('云盘歌曲')
         mymusic_cloud_item.clicked.connect(
             lambda: self._app.browser.goto(page='/providers/netease/fav'),
             weak=False)

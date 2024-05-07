@@ -16,7 +16,7 @@ from marshmallow import Schema, post_load, fields, EXCLUDE
 from feeluown.library import (
     SongModel, BriefAlbumModel, BriefArtistModel, ModelState, BriefSongModel,
     VideoModel, AlbumModel, ArtistModel, PlaylistModel, BriefUserModel,
-    SimpleSearchResult, MediaFlags,
+    SimpleSearchResult, MediaFlags, AlbumType
 )
 from feeluown.media import Quality, MediaType, Media
 
@@ -176,6 +176,9 @@ class V2AlbumSchema(Schema):
     description = fields.Str(missing='')
     released = fields.Int(data_key='publishTime', missing=0)
 
+    # Single/专辑/"EP/Single"/合集/专辑/精选集
+    type = fields.Str(required=True, data_key='type')
+
     @post_load
     def create_v2_model(self, data, **kwargs):
         released = data['released']
@@ -184,6 +187,18 @@ class V2AlbumSchema(Schema):
             released_str = released_date.strftime('%Y-%m-%d')
             data['released'] = released_str
         data['songs'] = data['songs'] or []
+        type_str = data.pop('type')
+        if type_str == 'Single':
+            type_ = AlbumType.single
+        elif type_str == 'EP/Single':
+            type_ = AlbumType.ep
+        elif type_str == '合集':
+            type_ = AlbumType.compilation
+        elif type_str == '精选集':
+            type_ = AlbumType.retrospective
+        else:
+            type_ = AlbumType.standard
+        data['type_'] = type_
         return AlbumModel(**data)
 
 

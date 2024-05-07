@@ -123,6 +123,12 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return [_deserialize(song_data, V2SongSchemaForV3)
                 for song_data in songs_data]
 
+    def toplist_list(self):
+        return [_deserialize(each, V2PlaylistSchema) for each in self.api.list_toplist()]
+
+    def toplist_get(self, identifier):
+        return self.playlist_get(identifier)
+
     def song_get(self, identifier):
         data = self.api.song_detail(int(identifier))
         return _deserialize(data, V2SongSchema)
