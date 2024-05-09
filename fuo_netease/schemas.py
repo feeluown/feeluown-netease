@@ -55,6 +55,18 @@ def create_model(model_cls, data, fields_to_cache=None):
     return model
 
 
+def get_media_flags(fee: int):
+    # 0: 免费或无版权
+    # 1: VIP 歌曲
+    # 4: 购买专辑
+    # 8: 非会员可免费播放低音质，会员可播放高音质及下载
+    if fee == 1:
+        return MediaFlags.vip
+    elif fee == 4:
+        return MediaFlags.pay
+    return None
+
+
 class V2MvSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
     title = fields.Str(required=True, data_key='name')
@@ -134,15 +146,10 @@ class V2SongSchema(Schema):
         if data['title'] is None:
             data['title'] = Unknown
 
-        # 0: 免费或无版权
-        # 1: VIP 歌曲
-        # 4: 购买专辑
-        # 8: 非会员可免费播放低音质，会员可播放高音质及下载
         fee = data.pop('fee')
-        if fee == 1:
-            data['media_flags'] = MediaFlags.vip
-        elif fee == 4:
-            data['media_flags'] = MediaFlags.pay
+        flags = get_media_flags(fee)
+        if flags is not None:
+            data['media_flags'] = flags
         return create_model(SongModel, data, ['mv_id', 'comment_thread_id'])
 
 
@@ -156,10 +163,16 @@ class V2SongSchemaForV3(Schema):
                           allow_none=True)
 
     mv_id = fields.Int(required=True, data_key='mv')
+    fee = fields.Int(required=True)
 
     @post_load
     def create_v2_model(self, data, **kwargs):
         data['artists'] = data['artists'] or []
+
+        fee = data.pop('fee')
+        flags = get_media_flags(fee)
+        if flags is not None:
+            data['media_flags'] = flags
         return create_model(SongModel, data, ['mv_id'])
 
 

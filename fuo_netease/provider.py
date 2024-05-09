@@ -105,6 +105,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
                 for song_data in songs_data]
 
     def rec_list_daily_playlists(self):
+        # If no user login, the API return code=301.
         if not self.has_current_user():
             return []
 
@@ -253,32 +254,34 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             songs_url_data = self.api.weapi_songs_url([song_id], 999000)
             assert songs_url_data, 'length should not be 0'
             song_url_data = songs_url_data[0]
-            highest_bitrate = song_url_data['br']
-            # When the bitrate is large than 320000, the quality is treated as
-            # lossless. We set the threshold to 400000 here.
-            # Note(cosven): From manual testing, the bitrate of lossless media
-            # can be 740kbps, 883kbps, 1411kbps, 1777kbps.
-            if song_url_data['url'] and 'privatecloud' in song_url_data['url']:
-                # 对于云盘歌曲, netease会抛弃官方音乐地址, 只会返回自己上传的音乐链接
-                # bitrate不由用户提供 由官方估算， 且不再是标准的320, 192, 128
-                q_media_mapping[Quality.Audio.shq] = (highest_bitrate,
-                                                      song_url_data['url'],
-                                                      song_url_data['type'])
+            if song_url_data['freeTrialInfo'] is not None:
+                logger.debug(f'song:{song_id} only has media segment for trial')
             else:
-                if highest_bitrate > 400000:
+                highest_bitrate = song_url_data['br']
+                # When the bitrate is large than 320000, the quality is treated as
+                # lossless. We set the threshold to 400000 here.
+                # Note(cosven): From manual testing, the bitrate of lossless media
+                # can be 740kbps, 883kbps, 1411kbps, 1777kbps.
+                if song_url_data['url'] and 'privatecloud' in song_url_data['url']:
+                    # 对于云盘歌曲, netease会抛弃官方音乐地址, 只会返回自己上传的音乐链接
+                    # bitrate不由用户提供 由官方估算， 且不再是标准的320, 192, 128
                     q_media_mapping[Quality.Audio.shq] = (highest_bitrate,
                                                           song_url_data['url'],
                                                           song_url_data['type'])
+                else:
+                    if highest_bitrate > 400000:
+                        q_media_mapping[Quality.Audio.shq] = (highest_bitrate,
+                                                              song_url_data['url'],
+                                                              song_url_data['type'])
 
-                for key, quality in key_quality_mapping.items():
-                    # Ensure the quality info exists.
-                    if key in song_data and song_data[key] is not None:
-                        # This resource is invalid for current user since the expected
-                        # bitrate is large than the highest_bitrate
-                        if (song_data[key]['br'] - highest_bitrate) > 10000:
-                            continue
-                        q_media_mapping[quality] = (song_data[key]['br'], None, None)
-
+                    for key, quality in key_quality_mapping.items():
+                        # Ensure the quality info exists.
+                        if key in song_data and song_data[key] is not None:
+                            # This resource is invalid for current user since the
+                            # expected bitrate is large than the highest_bitrate
+                            if (song_data[key]['br'] - highest_bitrate) > 10000:
+                                continue
+                            q_media_mapping[quality] = (song_data[key]['br'], None, None)
         ttl = 60 * 20
         song.cache_set('q_media_mapping', q_media_mapping, ttl)
         return q_media_mapping
