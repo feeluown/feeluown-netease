@@ -358,6 +358,24 @@ class API(object):
             return data['data']
         return []
 
+    def user_level(self):
+        url = uri + '/user/level'
+        payload = self.encrypt_request({})
+        data = self.request('POST', url, payload)
+        # data example
+        #
+        # {'userId': 12345,
+        #  'info': '60G音乐网盘免费容量$黑名单上限100',
+        #  'progress': 0.175,
+        #  'nextPlayCount': 5000,
+        #  'nextLoginCount': 150,
+        #  'nowPlayCount': 875,
+        #  'nowLoginCount': 150,
+        #  'level': 8},
+        if data['code'] == 200:
+            return data['data']
+        raise CodeShouldBe200(data)
+
     def songs_detail(self, music_ids):
         """批量获取歌曲的详细信息（老版）
 

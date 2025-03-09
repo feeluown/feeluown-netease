@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Optional
 
 from feeluown.library import BriefUserModel
 from .api import api
@@ -85,7 +86,7 @@ class LoginController(object):
             json.dump(data, f, indent=4)
 
     @classmethod
-    def load(cls):
+    def load(cls) -> Optional[BriefUserModel]:
         if not os.path.exists(USERS_INFO_FILE):
             return None
         with open(USERS_INFO_FILE, 'r') as f:

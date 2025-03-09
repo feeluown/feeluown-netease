@@ -52,7 +52,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             self.auth(user)
             logger.info(f"Auto logging ok, user: {user.name}")
         else:
-            logger.info(f"Auto logging failed, no user found.")
+            logger.info("Auto logging failed, no user found.")
 
     def auth(self, user):
         cookies, exists = user.cache_get('cookies')
@@ -67,7 +67,14 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
     def get_current_user(self):
         if self._user is None:
             raise NoUserLoggedIn
+        # 理论上，self._user 的 cookies 缓存总是存在的。
+        # 因为在创建 user 的各个逻辑里面，cookies 字段是带上的。
+        if isinstance(self._user, UserModel):
+            return self._user
         user = self.user_get(self._user.identifier)
+        cookies, exists = self._user.cache_get('cookies')
+        if exists:
+            user.cache_set('cookies', cookies)
         return user
 
     def user_get(self, identifier):
@@ -483,6 +490,23 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         data['q'] = keyword
         result = _deserialize(data, NeteaseSearchSchema)
         return result
+
+    def get_user_from_cookies(self, cookies):
+        """Get a user model with cookies
+        """
+        if not cookies:  # is None or empty
+            raise ValueError('empty cookies')
+
+        provider.api.load_cookies(cookies)
+        try:
+            data = provider.api.user_level()
+        except CodeShouldBe200 as e:
+            raise ValueError(f'get user info with cookies failed: {e}')
+        else:
+            user_id = data['userId']
+            user = self.user_get(user_id)
+            user.cache_set('cookies', cookies)
+            return user
 
 
 provider = NeteaseProvider()

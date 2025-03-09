@@ -3,11 +3,16 @@ import json
 import logging
 import os
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import (QVBoxLayout, QLineEdit,
                              QDialog, QPushButton,
                              QLabel)
+from feeluown.gui.widgets.login import (
+    CookiesLoginDialog as _CookiesLoginDialog, InvalidCookies,
+)
 
+from .login_controller import LoginController
+from .provider import provider
 from .consts import USER_PW_FILE
 
 logger = logging.getLogger(__name__)
@@ -28,6 +33,23 @@ class LoginDialog(QDialog):
         self.captcha_needed = False
         self.captcha_id = 0
 
+        self.notes1_label = QLabel(
+            '<h3>支持两种登录方式</h3>\n'
+            '<li>第一种方式是直接读取浏览器 cookies 来登录，这时你需要确保浏览器已经登录。推荐！</li>',
+            self
+        )
+        self.notes2_label = QLabel(
+            '<li>第二种是使用账号密码登录，请填入账号和密码。'
+            '当你的账号名是手机号时，你需要注意区号是否正确。'
+            '如果你的账号名是邮箱，则可以忽略区号。</li>',
+            self
+        )
+        self.notes1_label.setWordWrap(True)
+        self.notes2_label.setWordWrap(True)
+        self.notes1_label.setTextFormat(Qt.RichText)
+        self.notes2_label.setTextFormat(Qt.RichText)
+
+        self.setMaximumWidth(400)
         self.country_code_input = QLineEdit(self)
         self.username_input = QLineEdit(self)
         self.pw_input = QLineEdit(self)
@@ -39,6 +61,7 @@ class LoginDialog(QDialog):
         self.captcha_input.hide()
         self.hint_label = QLabel(self)
         self.ok_btn = QPushButton('登录', self)
+        self.cookies_login_btn = QPushButton('读取浏览器 cookies 登录', self)
         self._layout = QVBoxLayout(self)
 
         self.country_code_input.setPlaceholderText('国际电话区号（默认为86）')
@@ -47,10 +70,15 @@ class LoginDialog(QDialog):
 
         self.pw_input.textChanged.connect(self.dis_encrypt)
         self.ok_btn.clicked.connect(self.login)
+        self.cookies_login_btn.clicked.connect(self.show_cookies_login_dialog)
 
-        self.setFixedWidth(200)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setSpacing(0)
+        self._layout.addWidget(self.notes1_label)
+        self._layout.addWidget(self.cookies_login_btn)
+        self._layout.addStretch(0)
+        self._layout.addSpacing(20)
+        self._layout.addWidget(self.notes2_label)
         self._layout.addWidget(self.country_code_input)
         self._layout.addWidget(self.username_input)
         self._layout.addWidget(self.pw_input)
@@ -65,6 +93,22 @@ class LoginDialog(QDialog):
         self.username_input.setText(data['username'])
         self.pw_input.setText(data['password'])
         self.is_encrypted = True
+
+    def show_cookies_login_dialog(self):
+        self._dialog = CookiesLoginDialog('https://music.163.com', ['MUSIC_U'])
+        self._dialog.login_succeed.connect(self.on_login_succeed)
+        self._dialog.show()
+        self._dialog.autologin()
+        self.hide()
+
+    def on_login_succeed(self):
+        try:
+            del self._dialog
+        except:  # noqa
+            pass
+        # 理论上，这里肯定不会触发 IO 请求。
+        self.login_success.emit(provider.get_current_user())
+        self.hide()
 
     def show_hint(self, text):
         self.hint_label.setText(text)
@@ -96,7 +140,7 @@ class LoginDialog(QDialog):
         if self.captcha_needed:
             captcha = str(self.captcha_input.text())
             captcha_id = self.captcha_id
-            data = self.check_captcha(captcha_id, captcha)
+            data = self.verify_captcha(captcha_id, captcha)
             if data['code'] == 200:
                 self.captcha_input.hide()
                 self.captcha_label.hide()
@@ -142,3 +186,27 @@ class LoginDialog(QDialog):
         self.is_encrypted = True
 
         logger.info('load username and password from %s' % USER_PW_FILE)
+
+
+class CookiesLoginDialog(_CookiesLoginDialog):
+
+    def setup_user(self, user):
+        provider.auth(user)
+
+    async def user_from_cookies(self, cookies):
+        try:
+            user = provider.get_user_from_cookies(cookies)
+        except ValueError as e:
+            raise InvalidCookies(str(e))
+        return user
+
+    def load_user_cookies(self):
+        user = LoginController.load()
+        if user is not None:
+            cookies, exists = user.cache_get('cookies')
+            assert exists
+            return cookies
+        return None
+
+    def dump_user_cookies(self, user, cookies):
+        LoginController.save(user)

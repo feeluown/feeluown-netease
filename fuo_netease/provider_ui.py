@@ -76,6 +76,8 @@ class NeteaseProviderUI(AbstractProviderUi):
             lambda user: asyncio.ensure_future(self.login_as(user)))
 
     async def login_as(self, user):
+        # 如果是用 cookies 登录的话，这些其实已经设置上了。
+        # 如果使用密码登录的话，这些则没有设置上。
         provider.auth(user)
         self._user = user
         LoginController.save(user)
