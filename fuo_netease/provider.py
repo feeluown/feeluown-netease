@@ -5,8 +5,10 @@ from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, 
     NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
 from feeluown.library import ModelType, SearchType
+from feeluown.utils.dispatch import Signal
 from feeluown.utils.reader import create_reader, SequentialReader
 from .api import API, CodeShouldBe200
+from .login_controller import LoginController
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,7 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
     def __init__(self):
         super().__init__()
         self.api = API()
+        self.current_user_changed = Signal()
 
     @property
     def identifier(self):
@@ -42,11 +45,21 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
     def name(self):
         return '网易云音乐'
 
+    def auto_login(self):
+        logger.info("Try auto logging...")
+        user = LoginController.load()
+        if user is not None:
+            self.auth(user)
+            logger.info(f"Auto logging ok, user: {user.name}")
+        else:
+            logger.info(f"Auto logging failed, no user found.")
+
     def auth(self, user):
         cookies, exists = user.cache_get('cookies')
         assert exists and cookies is not None
         self._user = user
         self.api.load_cookies(cookies)
+        self.current_user_changed.emit(user)
 
     def has_current_user(self):
         return self._user is not None
