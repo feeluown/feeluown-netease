@@ -11,6 +11,9 @@ pip3 install fuo-netease
 ```
 
 ## changelog
+### 1.0.5 (2025-09-26)
+- 支持 pyqt6
+
 ### 1.0.4 (2025-03-10)
 - 支持读取浏览器 cookies 登录
 
