@@ -2,12 +2,12 @@ import logging
 
 from pathlib import Path
 
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from feeluown.gui.widgets import TextButton
 from feeluown.utils import aio
 from feeluown.gui.page_containers.table import Renderer
 
 from fuo_netease import provider
+from fuo_netease.qt_compat import QFileDialog, QMessageBox
 
 logger = logging.getLogger(__name__)
 

@@ -3,14 +3,14 @@ import json
 import logging
 import os
 
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import (QVBoxLayout, QLineEdit,
-                             QDialog, QPushButton,
-                             QLabel)
 from feeluown.gui.widgets.login import (
     CookiesLoginDialog as _CookiesLoginDialog, InvalidCookies,
 )
 
+from .qt_compat import (
+    QDialog, QLabel, QPushButton, QLineEdit, QVBoxLayout,
+    pyqtSignal, RichText, Password
+)
 from .login_controller import LoginController
 from .provider import provider
 from .consts import USER_PW_FILE
@@ -46,14 +46,14 @@ class LoginDialog(QDialog):
         )
         self.notes1_label.setWordWrap(True)
         self.notes2_label.setWordWrap(True)
-        self.notes1_label.setTextFormat(Qt.RichText)
-        self.notes2_label.setTextFormat(Qt.RichText)
+        self.notes1_label.setTextFormat(RichText)
+        self.notes2_label.setTextFormat(RichText)
 
         self.setMaximumWidth(400)
         self.country_code_input = QLineEdit(self)
         self.username_input = QLineEdit(self)
         self.pw_input = QLineEdit(self)
-        self.pw_input.setEchoMode(QLineEdit.Password)
+        self.pw_input.setEchoMode(Password)
         # self.remember_checkbox = FCheckBox(self)
         self.captcha_label = QLabel(self)
         self.captcha_label.hide()
