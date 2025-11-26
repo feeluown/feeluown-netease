@@ -4,9 +4,11 @@ import os
 from typing import TYPE_CHECKING, Protocol
 
 from feeluown.utils import aio
+from feeluown.utils.dispatch import Signal
 from feeluown.gui.provider_ui import (
     AbstractProviderUi,
     UISupportsLoginOrGoHome,
+    NavBtn,
 )
 from feeluown.gui.widgets.login import (
     CookiesLoginDialog as _CookiesLoginDialog, InvalidCookies,
@@ -34,9 +36,14 @@ class NeteaseProviderUI(AbstractProviderUi):
     def __init__(self, app: 'GuiApp'):
         self._app = app
         self._user = None
+        self._login_event = Signal()
 
     def _(self) -> UISupports:
         return self
+
+    @property
+    def login_event(self):
+        return self._login_event
 
     @property
     def provider(self):
@@ -53,7 +60,7 @@ class NeteaseProviderUI(AbstractProviderUi):
     def login_or_go_home(self):
         if self._user is not None:
             logger.debug('You have already logined in.')
-            asyncio.ensure_future(self.login_as(self._user))
+            self.login_event.emit(self, 2)
             return
 
         logger.debug('Trying to load last login user...')
@@ -63,11 +70,11 @@ class NeteaseProviderUI(AbstractProviderUi):
             assert exists
             if 'MUSIC_U' in cookies:
                 logger.debug('Trying to load last login user...done')
-                asyncio.ensure_future(self.login_as(user))
+                self.provider.auth(user)
+                self.login_event.emit(self, 1)
                 return
 
         logger.debug('Trying to load last login user...failed')
-
         self._dialog = CookiesLoginDialog('https://music.163.com', ['MUSIC_U'])
         self._dialog.login_succeed.connect(self.on_login_succeed)
         self._dialog.show()
@@ -75,37 +82,21 @@ class NeteaseProviderUI(AbstractProviderUi):
 
     def on_login_succeed(self):
         del self._dialog
-        aio.run_afn(self.login_as, provider.get_current_user())
+        self.login_event.emit(self, 1)
 
-    async def login_as(self, user):
-        # 如果是用 cookies 登录的话，这些其实已经设置上了。
-        # 如果使用密码登录的话，这些则没有设置上。
-        provider.auth(user)
-        self._user = user
-        LoginController.save(user)
-        left_panel = self._app.ui.left_panel
-        left_panel.playlists_con.show()
-        left_panel.playlists_con.create_btn.show()
-        left_panel.my_music_con.show()
-
-        mymusic_fm_item = self._app.mymusic_uimgr.create_item('私人 FM')
-        mymusic_fm_item.clicked.connect(self._activate_fm)
-        mymusic_cloud_item = self._app.mymusic_uimgr.create_item('云盘歌曲')
-        mymusic_cloud_item.clicked.connect(
-            lambda: self._app.browser.goto(page='/providers/netease/fav'),
-            weak=False)
-
-        self._app.mymusic_uimgr.clear()
-        self._app.mymusic_uimgr.add_item(mymusic_fm_item)
-        self._app.mymusic_uimgr.add_item(mymusic_cloud_item)
-
-        await self._refresh_current_user_playlists()
-
-    async def _refresh_current_user_playlists(self):
-        playlists, fav_playlists = await aio.run_fn(self.provider.current_user_playlists)
-        self._app.pl_uimgr.clear()
-        self._app.pl_uimgr.add(playlists)
-        self._app.pl_uimgr.add(fav_playlists, is_fav=True)
+    def list_nav_btns(self):
+        return [
+            NavBtn(
+                icon='📻',
+                text='私人 FM',
+                cb=self._activate_fm
+            ),
+            NavBtn(
+                icon='☁️',
+                text='云盘歌曲',
+                cb=lambda: self._app.browser.goto(page='/providers/netease/fav')
+            ),
+        ]
 
     def _activate_fm(self):
         self._app.fm.activate(self._fetch_fm_songs)

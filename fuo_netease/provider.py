@@ -86,7 +86,11 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return user
 
     def current_user_fav_create_playlists_rd(self):
-        return create_g(self.api.subscribed_djradio, NeteaseDjradioSchema, 'djRadios')
+        _, fav_playlists = self.current_user_playlists()
+        return (
+            fav_playlists +
+            list(create_g(self.api.subscribed_djradio, NeteaseDjradioSchema, 'djRadios'))
+        )
 
     def current_user_fav_create_artists_rd(self):
         return create_g(self.api.user_favorite_artists, V2BriefArtistSchema)
@@ -102,6 +106,10 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
             NCloudSchema,
             data_key='simpleSong'
         )
+
+    def current_user_list_playlists(self):
+        playlists, _ = self.current_user_playlists()
+        return playlists
 
     def current_user_playlists(self):
         user_id = str(self._user.identifier)
