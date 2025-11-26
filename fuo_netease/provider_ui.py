@@ -8,11 +8,13 @@ from feeluown.gui.provider_ui import (
     AbstractProviderUi,
     UISupportsLoginOrGoHome,
 )
+from feeluown.gui.widgets.login import (
+    CookiesLoginDialog as _CookiesLoginDialog, InvalidCookies,
+)
 
 from .excs import NeteaseIOError
 from .provider import provider
 from .login_controller import LoginController
-from .ui import LoginDialog
 
 if TYPE_CHECKING:
     from feeluown.app.gui_app import GuiApp
@@ -31,11 +33,6 @@ class NeteaseProviderUI(AbstractProviderUi):
 
     def __init__(self, app: 'GuiApp'):
         self._app = app
-        self.login_dialog = LoginDialog(
-            verify_captcha=LoginController.check_captcha,
-            verify_userpw=LoginController.check,
-            create_user=LoginController.create,
-        )
         self._user = None
 
     def _(self) -> UISupports:
@@ -70,10 +67,15 @@ class NeteaseProviderUI(AbstractProviderUi):
                 return
 
         logger.debug('Trying to load last login user...failed')
-        self.login_dialog.show()
-        self.login_dialog.load_user_pw()
-        self.login_dialog.login_success.connect(
-            lambda user: asyncio.ensure_future(self.login_as(user)))
+
+        self._dialog = CookiesLoginDialog('https://music.163.com', ['MUSIC_U'])
+        self._dialog.login_succeed.connect(self.on_login_succeed)
+        self._dialog.show()
+        self._dialog.autologin()
+
+    def on_login_succeed(self):
+        del self._dialog
+        aio.run_afn(self.login_as, provider.get_current_user())
 
     async def login_as(self, user):
         # 如果是用 cookies 登录的话，这些其实已经设置上了。
@@ -113,3 +115,27 @@ class NeteaseProviderUI(AbstractProviderUi):
         if songs is None:
             raise NeteaseIOError('unknown error: get no radio songs')
         return songs
+
+
+class CookiesLoginDialog(_CookiesLoginDialog):
+
+    def setup_user(self, user):
+        provider.auth(user)
+
+    async def user_from_cookies(self, cookies):
+        try:
+            user = provider.get_user_from_cookies(cookies)
+        except ValueError as e:
+            raise InvalidCookies(str(e))
+        return user
+
+    def load_user_cookies(self):
+        user = LoginController.load()
+        if user is not None:
+            cookies, exists = user.cache_get('cookies')
+            assert exists
+            return cookies
+        return None
+
+    def dump_user_cookies(self, user, cookies):
+        LoginController.save(user)
