@@ -11,6 +11,10 @@ pip3 install fuo-netease
 ```
 
 ## changelog
+### 1.0.6 (2025-11-27)
+- 移除不支持的密码登录，只留下 Cookies 登录方式
+- 适配 FeelUOwn 的最新设计，移除自己的 UI 代码
+
 ### 1.0.5 (2025-09-26)
 - 支持 pyqt6
 
