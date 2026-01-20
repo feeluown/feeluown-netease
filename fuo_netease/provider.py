@@ -10,6 +10,7 @@ from feeluown.utils.dispatch import Signal
 from feeluown.utils.reader import create_reader, SequentialReader
 from .api import API, CodeShouldBe200
 from .login_controller import LoginController
+from .excs import NeteaseIOError
 
 
 logger = logging.getLogger(__name__)
@@ -132,18 +133,12 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         if count <= 0:
             return []
 
-        songs: List[SongModel] = []
-        attempts = 0
-        # We retry a few times to honor count while avoiding infinite loops.
-        while len(songs) < count and attempts < 3:
-            songs_data = self.api.get_radio_music()
-            if not songs_data:
-                logger.error('data should not be None')
-                break
-            songs.extend(_deserialize(song_data, V2SongSchema)
-                         for song_data in songs_data)
-            attempts += 1
+        songs_data = self.api.get_radio_music()
+        if not songs_data:
+            raise NeteaseIOError('failed to fetch radio songs')
 
+        songs = [_deserialize(song_data, V2SongSchema)
+                 for song_data in songs_data]
         return songs[:count]
 
     def rec_list_daily_playlists(self):
