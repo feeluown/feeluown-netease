@@ -1,7 +1,8 @@
 import logging
+from typing import List
 
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
-    CommentModel, BriefCommentModel, BriefUserModel, UserModel, \
+    CommentModel, BriefCommentModel, BriefUserModel, UserModel, SongModel, \
     NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
 from feeluown.library import ModelType, SearchType
@@ -9,6 +10,7 @@ from feeluown.utils.dispatch import Signal
 from feeluown.utils.reader import create_reader, SequentialReader
 from .api import API, CodeShouldBe200
 from .login_controller import LoginController
+from .excs import NeteaseIOError
 
 
 logger = logging.getLogger(__name__)
@@ -124,13 +126,20 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return [_deserialize(e, V2PlaylistSchema) for e in playlists], \
             [_deserialize(e, V2PlaylistSchema) for e in fav_playlists]
 
-    def current_user_get_radio_songs(self):
+    def current_user_list_radio_songs(self, count: int = 3) -> List[SongModel]:
+        if not self.has_current_user():
+            raise NoUserLoggedIn
+
+        if count <= 0:
+            return []
+
         songs_data = self.api.get_radio_music()
-        if songs_data is None:
-            logger.error('data should not be None')
-            return None
-        return [_deserialize(song_data, V2SongSchema)
-                for song_data in songs_data]
+        if not songs_data:
+            raise NeteaseIOError('failed to fetch radio songs')
+
+        songs = [_deserialize(song_data, V2SongSchema)
+                 for song_data in songs_data]
+        return songs[:count]
 
     def rec_list_daily_playlists(self):
         # If no user login, the API return code=301.
