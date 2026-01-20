@@ -1,7 +1,8 @@
 import logging
+from typing import List
 
 from feeluown.library import AbstractProvider, ProviderV2, ProviderFlags as PF, \
-    CommentModel, BriefCommentModel, BriefUserModel, UserModel, \
+    CommentModel, BriefCommentModel, BriefUserModel, UserModel, SongModel, \
     NoUserLoggedIn, LyricModel, ModelNotFound
 from feeluown.media import Quality, Media
 from feeluown.library import ModelType, SearchType
@@ -124,13 +125,26 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
         return [_deserialize(e, V2PlaylistSchema) for e in playlists], \
             [_deserialize(e, V2PlaylistSchema) for e in fav_playlists]
 
-    def current_user_get_radio_songs(self):
-        songs_data = self.api.get_radio_music()
-        if songs_data is None:
-            logger.error('data should not be None')
-            return None
-        return [_deserialize(song_data, V2SongSchema)
-                for song_data in songs_data]
+    def current_user_list_radio_songs(self, count: int = 3) -> List[SongModel]:
+        if not self.has_current_user():
+            raise NoUserLoggedIn
+
+        if count <= 0:
+            return []
+
+        songs: List[SongModel] = []
+        attempts = 0
+        # We retry a few times to honor count while avoiding infinite loops.
+        while len(songs) < count and attempts < 3:
+            songs_data = self.api.get_radio_music()
+            if not songs_data:
+                logger.error('data should not be None')
+                break
+            songs.extend(_deserialize(song_data, V2SongSchema)
+                         for song_data in songs_data)
+            attempts += 1
+
+        return songs[:count]
 
     def rec_list_daily_playlists(self):
         # If no user login, the API return code=301.

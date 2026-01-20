@@ -1,9 +1,7 @@
-import asyncio
 import logging
 import os
 from typing import TYPE_CHECKING, Protocol
 
-from feeluown.utils import aio
 from feeluown.utils.dispatch import Signal
 from feeluown.gui.provider_ui import (
     AbstractProviderUi,
@@ -14,7 +12,6 @@ from feeluown.gui.widgets.login import (
     CookiesLoginDialog as _CookiesLoginDialog, InvalidCookies,
 )
 
-from .excs import NeteaseIOError
 from .provider import provider
 from .login_controller import LoginController
 
@@ -87,25 +84,11 @@ class NeteaseProviderUI(AbstractProviderUi):
     def list_nav_btns(self):
         return [
             NavBtn(
-                icon='📻',
-                text='私人 FM',
-                cb=self._activate_fm
-            ),
-            NavBtn(
                 icon='☁️',
                 text='云盘歌曲',
                 cb=lambda: self._app.browser.goto(page='/providers/netease/fav')
             ),
         ]
-
-    def _activate_fm(self):
-        self._app.fm.activate(self._fetch_fm_songs)
-
-    def _fetch_fm_songs(self, *args, **kwargs):
-        songs = provider.current_user_get_radio_songs()  # noqa
-        if songs is None:
-            raise NeteaseIOError('unknown error: get no radio songs')
-        return songs
 
 
 class CookiesLoginDialog(_CookiesLoginDialog):
