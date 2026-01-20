@@ -100,6 +100,17 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
     def current_user_fav_create_albums_rd(self):
         return create_g(self.api.user_favorite_albums, V2BriefAlbumSchema)
 
+    def current_user_fav_create_songs_rd(self):
+        if not self.has_current_user():
+            raise NoUserLoggedIn
+
+        playlists = self.current_user_list_playlists()
+        if not playlists:
+            return create_reader(())
+
+        fav_playlist = playlists[0]
+        return self.playlist_create_songs_rd(fav_playlist)
+
     def current_user_cloud_songs(self):
         return create_cloud_songs_g(
             self.api.cloud_songs,
