@@ -11,6 +11,9 @@ pip3 install fuo-netease
 ```
 
 ## changelog
+### 1.0.7 (2026-01-24)
+- 适配 `current_user_fav_create_songs_rd` 和 `current_user_list_radio_songs` 接口
+
 ### 1.0.6 (2025-11-27)
 - 移除不支持的密码登录，只留下 Cookies 登录方式
 - 适配 FeelUOwn 的最新设计，移除自己的 UI 代码
