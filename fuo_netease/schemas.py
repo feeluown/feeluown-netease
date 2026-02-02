@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSchema(Schema):
-    source = fields.Str(missing='netease')
+    source = fields.Str(load_default='netease')
 
     class Meta:
         unknown = EXCLUDE
@@ -137,7 +137,7 @@ class V2SongSchema(Schema):
 
     mv_id = fields.Int(required=True, data_key='mvid')
     comment_thread_id = fields.Str(data_key='commentThreadId',
-                                   allow_none=True, missing=None)
+                                   allow_none=True, load_default=None)
     fee = fields.Int(required=True)
 
     @post_load
@@ -186,8 +186,8 @@ class V2AlbumSchema(Schema):
     song_count = fields.Int(data_key='size')
 
     # Description is fetched seperatelly by `album_desc` API.
-    description = fields.Str(missing='')
-    released = fields.Int(data_key='publishTime', missing=0)
+    description = fields.Str(load_default='')
+    released = fields.Int(data_key='publishTime', load_default=0)
 
     # Single/专辑/"EP/Single"/合集/专辑/精选集
     type = fields.Str(required=True, data_key='type')
@@ -222,10 +222,10 @@ class V2ArtistSchema(Schema):
     hot_songs = fields.List(fields.Nested('V2SongSchema'), data_key='songs')
 
     # TODO:
-    aliases = fields.List(fields.Str(), missing=[])
+    aliases = fields.List(fields.Str(), load_default=[])
 
     # Description is fetched seperatelly by `artist_desc` API.
-    description = fields.Str(missing='')
+    description = fields.Str(load_default='')
 
     @post_load
     def create_v2_model(self, data, **kwargs):
@@ -323,7 +323,7 @@ class V2PlaylistCreatorScehma(Schema):
 
 class V2PlaylistSchema(Schema):
     identifier = fields.Int(required=True, data_key='id')
-    creator = fields.Nested(V2PlaylistCreatorScehma, missing=None)
+    creator = fields.Nested(V2PlaylistCreatorScehma, load_default=None)
     name = fields.Str(required=True)
     description = fields.Str(required=True, allow_none=True, data_key='description')
     cover = fields.Url(required=True, data_key='coverImgUrl')
