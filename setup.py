@@ -27,7 +27,7 @@ setup(
         'feeluown>=4.0a0',
         'beautifulsoup4',
         'pycryptodome',
-        'marshmallow>=3.0',
+        'marshmallow>=3.13.0',
         'requests',
         'mutagen>=1.37',
     ],
