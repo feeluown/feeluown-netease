@@ -11,6 +11,10 @@ pip3 install fuo-netease
 ```
 
 ## changelog
+
+### 1.0.8 (2026-02-03)
+- 支持更新版本的 marshmallow
+
 ### 1.0.7 (2026-01-24)
 - 适配 `current_user_fav_create_songs_rd` 和 `current_user_list_radio_songs` 接口
 

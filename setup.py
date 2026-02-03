@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='fuo_netease',
-    version='1.0.7',
+    version='1.0.8',
     description='feeluown netease plugin',
     author='Cosven',
     author_email='yinshaowen241@gmail.com',
