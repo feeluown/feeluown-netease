@@ -11,7 +11,8 @@ else:
 
 QtCore = importlib.import_module(qt_moduel_name + ".QtCore", package=qt_moduel_name)
 QtGui = importlib.import_module(qt_moduel_name + ".QtGui", package=qt_moduel_name)
-QtWidgets = importlib.import_module(qt_moduel_name + ".QtWidgets", package=qt_moduel_name)
+QtWidgets = importlib.import_module(qt_moduel_name + ".QtWidgets",
+                                    package=qt_moduel_name)
 
 QLineEdit = QtWidgets.QLineEdit
 QLabel = QtWidgets.QLabel
@@ -29,4 +30,3 @@ if qt_moduel_name == 'pyqt5':
 else:
     RichText = QtCore.Qt.TextFormat.RichText
     Password = QLineEdit.EchoMode.Password
-
