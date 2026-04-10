@@ -47,9 +47,8 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
 
     @property
     def name(self):
-        try:
-            name = t("provider-name", domain=domain)
-        except TypeError:
+        name = t("provider-name", domain=domain)
+        if name == "provider-name":
             name = "网易云音乐"
         return name
 
