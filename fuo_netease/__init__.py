@@ -3,7 +3,7 @@
 import logging
 
 from .provider import provider
-from consts import domain
+from .consts import domain
 
 __alias__ = '网易云音乐'
 __feeluown_version__ = '2.1a0'
