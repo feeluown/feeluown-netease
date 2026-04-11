@@ -12,7 +12,7 @@ from .api import API, CodeShouldBe200
 from .login_controller import LoginController
 from .excs import NeteaseIOError
 from feeluown.i18n import t
-from consts import domain
+from .consts import domain
 
 
 logger = logging.getLogger(__name__)
