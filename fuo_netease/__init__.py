@@ -3,13 +3,12 @@
 import logging
 
 from .provider import provider
+from consts import domain
 
 __alias__ = '网易云音乐'
 __feeluown_version__ = '2.1a0'
 __version__ = '0.0.2'
 __desc__ = '网易云音乐'
-
-domain = "fuo-netease"
 
 logger = logging.getLogger(__name__)
 

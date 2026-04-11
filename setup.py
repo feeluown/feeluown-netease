@@ -12,6 +12,7 @@ setup(
     packages=find_packages(exclude=('tests*',)),
     package_data={
         '': ['assets/*.svg',
+             'locales/**/*.ftl',
              ]
         },
     url='https://github.com/feeluown/feeluown-netease',
