@@ -48,8 +48,6 @@ class NeteaseProvider(AbstractProvider, ProviderV2):
     @property
     def name(self):
         name = t("provider-name", domain=domain)
-        if name == "provider-name":
-            name = "网易云音乐"
         return name
 
     def auto_login(self):
