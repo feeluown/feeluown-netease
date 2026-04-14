@@ -22,8 +22,6 @@ async def render(req, **kwargs):
 
 class FavRenderer(Renderer):
     def __init__(self):
-        global provider
-
         self._user = provider._user
 
     async def render(self):
